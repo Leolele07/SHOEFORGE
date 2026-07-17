@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![ShoeForge Logo](public/vite.svg)
+<img src="public/vite.svg" alt="ShoeForge Logo" width="80" height="80">
 
 **一款基于 Three.js 的 Web 端鞋子 3D 定制工具**
 
