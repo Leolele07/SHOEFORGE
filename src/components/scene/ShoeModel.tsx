@@ -269,13 +269,9 @@ function identifyPartGroup(name: string): PartGroup | null {
   return 'other';
 }
 
-function identifyMaterialType(mesh: THREE.Mesh): MaterialType {
-  if (!(mesh.material instanceof THREE.MeshStandardMaterial)) return 'leather';
-  const material = mesh.material;
-  if (material.metalness > 0.7) return 'metallic';
-  if (material.roughness < 0.3) return 'patent';
-  if (material.roughness > 0.8) return 'suede';
-  return 'leather';
+function identifyMaterialType(_mesh: THREE.Mesh): MaterialType {
+  // 所有材质默认为网布
+  return 'mesh';
 }
 
 function getPartDisplayName(group: PartGroup): string {

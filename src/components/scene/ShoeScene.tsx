@@ -24,15 +24,22 @@ export const getShoeBoundsInfo = () => shoeBoundsInfo;
 const SceneContent: React.FC = () => {
   const presetCamera = useUIStore((s) => s.presetCamera);
   const controlsRef = useRef<any>(null);
-  const [shoeCenter, setShoeCenter] = useState<[number, number, number]>([0, 1, 0]);
+  const [shoeCenter, setShoeCenter] = useState<[number, number, number]>([0, 0, 0]);
   const [cameraDistance, setCameraDistance] = useState(5);
 
   const showGround = !['free', 'bottom'].includes(presetCamera);
   const shoeOffsetY = ['free', 'bottom'].includes(presetCamera) ? 0.5 : 0;
 
   const handleShoeBounds = useCallback((bounds: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3 }) => {
-    setShoeCenter([bounds.center.x, bounds.center.y, bounds.center.z]);
+    const newCenter: [number, number, number] = [bounds.center.x, bounds.center.y, bounds.center.z];
+    setShoeCenter(newCenter);
     shoeBoundsInfo = bounds;
+
+    // 立即更新OrbitControls的target为鞋子中心
+    if (controlsRef.current) {
+      controlsRef.current.target.set(newCenter[0], newCenter[1], newCenter[2]);
+      controlsRef.current.update();
+    }
 
     // 动态计算最佳相机距离
     const maxDim = Math.max(bounds.size.x, bounds.size.y, bounds.size.z);
@@ -70,7 +77,6 @@ const SceneContent: React.FC = () => {
         enableRotate={false}
         minDistance={cameraDistance * 0.3}
         maxDistance={cameraDistance * 3}
-        target={shoeCenter}
       />
 
       <CameraController controlsRef={controlsRef} shoeCenter={shoeCenter} cameraDistance={cameraDistance} />

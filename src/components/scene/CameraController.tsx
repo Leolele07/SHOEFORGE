@@ -11,7 +11,7 @@ interface CameraControllerProps {
 
 export const CameraController: React.FC<CameraControllerProps> = ({
   controlsRef,
-  shoeCenter = [0, 1, 0],
+  shoeCenter = [0, 0, 0],
   cameraDistance = 5,
 }) => {
   const { camera } = useThree();
