@@ -2,27 +2,33 @@ import React from 'react';
 import { useUIStore } from '@/store/uiStore';
 import type { CameraPreset } from '@/types';
 
-const presets: { id: CameraPreset; label: string; icon: React.ReactNode }[] = [
-  { id: 'front', label: '正面', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg> },
-  { id: 'side', label: '侧面(左)', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> },
-  { id: 'sideRight', label: '侧面(右)', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 12s-4-8-11-8-11 8-11 8 4 8 11 8 11-8 11-8z"/><circle cx="12" cy="12" r="3"/></svg> },
-  { id: 'back', label: '背面', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> },
-  { id: 'top', label: '顶部', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg> },
-  { id: 'bottom', label: '底部', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg> },
-  { id: 'free', label: '自由', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> },
+const presets: { id: CameraPreset; label: string; icon: React.ReactNode; isRotate?: boolean }[] = [
+  { id: 'rotateLeft', label: '转左', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M2.5 2v6h6M2.66 15.57a10 10 0 1 0 .57-8.38"/></svg>, isRotate: true },
+  { id: 'rotateRight', label: '转右', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38"/></svg>, isRotate: true },
+  { id: 'top', label: '顶部', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg> },
+  { id: 'bottom', label: '底部', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg> },
+  { id: 'free', label: '自由', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> },
 ];
 
 export const CameraPresets: React.FC = () => {
-  const presetCamera = useUIStore((s) => s.presetCamera);
   const setPresetCamera = useUIStore((s) => s.setPresetCamera);
+  const triggerRotate = useUIStore((s) => s.triggerRotate);
+
+  const handleClick = (preset: typeof presets[0]) => {
+    if (preset.isRotate) {
+      triggerRotate(preset.id as 'rotateLeft' | 'rotateRight');
+    } else {
+      setPresetCamera(preset.id);
+    }
+  };
 
   return (
     <div className="camera-presets">
       {presets.map((preset) => (
         <button
           key={preset.id}
-          onClick={() => setPresetCamera(preset.id)}
-          className={`camera-preset ${presetCamera === preset.id ? 'active' : ''}`}
+          onClick={() => handleClick(preset)}
+          className="camera-preset"
           title={preset.label}
         >
           {preset.icon}
@@ -47,7 +53,7 @@ export const CameraPresets: React.FC = () => {
           align-items: center;
           gap: 2px;
           padding: var(--sf-space-2) var(--sf-space-3);
-          border: none;
+          border: 2px solid transparent;
           background: none;
           border-radius: var(--sf-radius-md);
           cursor: pointer;
@@ -55,6 +61,7 @@ export const CameraPresets: React.FC = () => {
           transition: all var(--sf-duration-fast) var(--sf-easing-default);
           min-width: 52px;
           white-space: nowrap;
+          user-select: none;
         }
 
         .camera-preset:hover {
@@ -62,9 +69,11 @@ export const CameraPresets: React.FC = () => {
           color: var(--sf-text-primary);
         }
 
-        .camera-preset.active {
+        .camera-preset:active {
+          border-color: var(--sf-color-primary);
           background-color: var(--sf-bg-dark);
           color: var(--sf-text-inverse);
+          transform: scale(0.95);
         }
 
         .camera-preset span {

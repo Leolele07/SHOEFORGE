@@ -71,7 +71,7 @@ export interface PBRParams {
 }
 
 // ── 相机预设 ──
-export type CameraPreset = 'front' | 'side' | 'sideRight' | 'back' | 'top' | 'bottom' | 'free';
+export type CameraPreset = 'rotateLeft' | 'rotateRight' | 'top' | 'bottom' | 'free';
 
 // ── UI 面板类型 ──
 export type PanelType = 'parts' | 'color' | 'material' | null;
