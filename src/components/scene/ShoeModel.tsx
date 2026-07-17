@@ -10,6 +10,7 @@ interface ShoeModelProps {
   partConfigs: Map<PartId, PartConfig>;
   onPartSelect: (partId: PartId | null) => void;
   onModelLoaded?: (parts: PartInfo[]) => void;
+  onShoeBounds?: (bounds: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3 }) => void;
 }
 
 export const ShoeModel: React.FC<ShoeModelProps> = ({
@@ -18,17 +19,17 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
   partConfigs,
   onPartSelect,
   onModelLoaded,
+  onShoeBounds,
 }) => {
   const { scene } = useGLTF(url);
   const groupRef = useRef<THREE.Group>(null);
   const hasCentered = useRef(false);
 
-  // 自动居中模型
+  // 自动居中模型，鞋底放在y=0，并自动检测朝向旋转对齐
   useEffect(() => {
     if (!scene || !groupRef.current || hasCentered.current) return;
 
     const box = new THREE.Box3().setFromObject(scene);
-    const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
 
     // 计算缩放比例，让鞋子大小约为2个单位
@@ -36,18 +37,100 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
     const scale = 2 / maxDim;
     groupRef.current.scale.setScalar(scale);
 
-    // 居中：先缩放，再平移
-    // 缩放后的中心点
-    const scaledCenter = center.clone().multiplyScalar(scale);
+    // 缩放后的尺寸
     const scaledMinY = box.min.y * scale;
 
-    // 将鞋子放在原点中心，底部在y=0
-    groupRef.current.position.x = -scaledCenter.x;
+    // ── 自动检测鞋子朝向 ──
+    // 策略：在XZ平面中，鞋子长轴是前后方向，短轴是左右方向
+    // 找出长轴，然后判断哪端是鞋头（通常更低/更窄）
+    let yRotation = 0;
+
+    // 收集所有顶点的XZ分布
+    const vertices: THREE.Vector3[] = [];
+    scene.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.geometry) {
+        const posAttr = child.geometry.getAttribute('position');
+        if (!posAttr) return;
+        for (let i = 0; i < posAttr.count; i++) {
+          vertices.push(new THREE.Vector3(
+            posAttr.getX(i),
+            posAttr.getY(i),
+            posAttr.getZ(i)
+          ));
+        }
+      }
+    });
+
+    if (vertices.length > 0) {
+      // 计算XZ平面上的分布范围
+      let minX = Infinity, maxX = -Infinity;
+      let minZ = Infinity, maxZ = -Infinity;
+      for (const v of vertices) {
+        if (v.x < minX) minX = v.x;
+        if (v.x > maxX) maxX = v.x;
+        if (v.z < minZ) minZ = v.z;
+        if (v.z > maxZ) maxZ = v.z;
+      }
+      const rangeX = maxX - minX;
+      const rangeZ = maxZ - minZ;
+
+      if (rangeX > rangeZ) {
+        // 鞋子长轴在X方向，旋转90°使长轴对齐Z轴（朝向相机）
+        yRotation = Math.PI / 2;
+        const midX = (minX + maxX) / 2;
+        let frontYSum = 0, frontCount = 0;
+        let backYSum = 0, backCount = 0;
+        for (const v of vertices) {
+          if (v.x < midX) { frontYSum += v.y; frontCount++; }
+          else { backYSum += v.y; backCount++; }
+        }
+        const frontAvgY = frontCount > 0 ? frontYSum / frontCount : 0;
+        const backAvgY = backCount > 0 ? backYSum / backCount : 0;
+        // 鞋头（更低的一端）应该朝向+Z（朝向相机）
+        if (frontAvgY > backAvgY) {
+          yRotation = -Math.PI / 2; // 反转
+        }
+      } else {
+        // 鞋子长轴在Z方向，只需判断鞋头朝向
+        const midZ = (minZ + maxZ) / 2;
+        let frontYSum = 0, frontCount = 0;
+        let backYSum = 0, backCount = 0;
+        for (const v of vertices) {
+          if (v.z < midZ) { frontYSum += v.y; frontCount++; }
+          else { backYSum += v.y; backCount++; }
+        }
+        const frontAvgY = frontCount > 0 ? frontYSum / frontCount : 0;
+        const backAvgY = backCount > 0 ? backYSum / backCount : 0;
+        if (frontAvgY < backAvgY) {
+          // -Z端是鞋头，旋转180°使鞋头朝向+Z
+          yRotation = Math.PI;
+        }
+      }
+    }
+
+    // 应用检测到的旋转
+    if (Math.abs(yRotation) > 0.001) {
+      groupRef.current.rotation.y = yRotation;
+    }
+
+    // 重新计算旋转后的包围盒（用于父组件相机定位）
+    const rotatedBox = new THREE.Box3().setFromObject(groupRef.current);
+    const rotatedSize = rotatedBox.getSize(new THREE.Vector3());
+    const rotatedCenter = rotatedBox.getCenter(new THREE.Vector3());
+
+    // 水平居中，垂直方向让鞋底在y=0
+    groupRef.current.position.x = -rotatedCenter.x;
     groupRef.current.position.y = -scaledMinY;
-    groupRef.current.position.z = -scaledCenter.z;
+    groupRef.current.position.z = -rotatedCenter.z;
+
+    // 通知父组件：鞋子的中心点和实际尺寸
+    if (onShoeBounds) {
+      const shoeCenter = new THREE.Vector3(0, rotatedSize.y / 2, 0);
+      onShoeBounds({ center: shoeCenter, size: rotatedSize, frontDir: new THREE.Vector3(0, 0, 1) });
+    }
 
     hasCentered.current = true;
-  }, [scene]);
+  }, [scene, onShoeBounds]);
 
   // 遍历场景，为每个mesh添加交互性
   useEffect(() => {

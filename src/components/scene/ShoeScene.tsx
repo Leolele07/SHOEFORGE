@@ -1,6 +1,7 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
+import * as THREE from 'three';
 import { useModelStore } from '@/store/modelStore';
 import { useCustomizationStore } from '@/store/customizationStore';
 import { useUIStore } from '@/store/uiStore';
@@ -12,20 +13,33 @@ import { CameraController } from './CameraController';
 import { Ground } from './Ground';
 import type { PartInfo } from '@/types';
 
-const DEFAULT_MODEL_URL = '/models/shoe.glb';
-const DEFAULT_MODEL_NAME = 'mesh_textured_pbr.glb';
+const DEFAULT_MODEL_URL = '/models/shoe.gltf';
+const DEFAULT_MODEL_NAME = 'NIKE SPORTS RUNNING CLASSIC.gltf';
 
-const SHOE_CENTER = [0, 1, 0] as [number, number, number];
+// 存储鞋子边界信息，供CameraController使用
+let shoeBoundsInfo: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3 } | null = null;
+
+export const getShoeBoundsInfo = () => shoeBoundsInfo;
 
 const SceneContent: React.FC = () => {
   const presetCamera = useUIStore((s) => s.presetCamera);
   const controlsRef = useRef<any>(null);
+  const [shoeCenter, setShoeCenter] = useState<[number, number, number]>([0, 1, 0]);
+  const [cameraDistance, setCameraDistance] = useState(5); // 新增：动态相机距离
 
-  // 地面只在固定视角模式显示
   const showGround = !['free', 'bottom'].includes(presetCamera);
-
-  // 底部/自由视角时鞋子悬浮，视觉居中
   const shoeOffsetY = ['free', 'bottom'].includes(presetCamera) ? 0.5 : 0;
+
+  const handleShoeBounds = useCallback((bounds: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3 }) => {
+    setShoeCenter([bounds.center.x, bounds.center.y, bounds.center.z]);
+    shoeBoundsInfo = bounds;
+
+    // 动态计算最佳相机距离
+    const maxDim = Math.max(bounds.size.x, bounds.size.y, bounds.size.z);
+    const fovRad = 45 * (Math.PI / 180);
+    const idealDistance = (maxDim / (2 * Math.tan(fovRad / 2))) * 1.5;
+    setCameraDistance(idealDistance);
+  }, []);
 
   return (
     <>
@@ -54,21 +68,25 @@ const SceneContent: React.FC = () => {
         enablePan={true}
         enableZoom={true}
         enableRotate={false}
-        minDistance={2}
-        maxDistance={10}
-        target={SHOE_CENTER}
+        minDistance={cameraDistance * 0.3}
+        maxDistance={cameraDistance * 3}
+        target={shoeCenter}
       />
 
-      <CameraController controlsRef={controlsRef} />
+      <CameraController controlsRef={controlsRef} shoeCenter={shoeCenter} cameraDistance={cameraDistance} />
 
       <group position={[0, shoeOffsetY, 0]}>
-        <ShoeModelWrapper />
+        <ShoeModelWrapper onShoeBounds={handleShoeBounds} />
       </group>
     </>
   );
 };
 
-const ShoeModelWrapper: React.FC = () => {
+interface ShoeModelWrapperProps {
+  onShoeBounds: (bounds: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3 }) => void;
+}
+
+const ShoeModelWrapper: React.FC<ShoeModelWrapperProps> = ({ onShoeBounds }) => {
   const { modelUrl } = useModelStore();
   const { selectedPartId, partConfigs, selectPart, initPartConfigs } = useCustomizationStore();
 
@@ -85,6 +103,7 @@ const ShoeModelWrapper: React.FC = () => {
       partConfigs={partConfigs}
       onPartSelect={selectPart}
       onModelLoaded={handleModelLoaded}
+      onShoeBounds={onShoeBounds}
     />
   );
 };
