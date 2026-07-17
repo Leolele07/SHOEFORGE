@@ -21,27 +21,40 @@ export const CameraController: React.FC<CameraControllerProps> = ({
   const targetPos = useRef(new THREE.Vector3());
   const targetLookAt = useRef(new THREE.Vector3());
   const isAnimating = useRef(false);
-  const currentAngle = useRef(0);
+  const currentStep = useRef(0); // 0=正面, 1=右侧面, 2=背面, 3=左侧面
 
-  // 根据角度计算相机位置（纯水平视角，相机Y=鞋子中心Y）
-  const getCameraPositionFromAngle = (angle: number): THREE.Vector3 => {
+  // 四个方向的相机位置（垂直于对应的边）
+  // 正面(-X) → 右侧面(+Z) → 背面(+X) → 左侧面(-Z)
+  const getCameraPositionFromStep = (step: number): THREE.Vector3 => {
     const cx = shoeCenter[0];
-    const cy = shoeCenter[1]; // 相机Y与鞋子中心Y一致，纯水平视角
+    const cy = shoeCenter[1]; // 纯水平视角
     const cz = shoeCenter[2];
     const d = cameraDistance;
 
-    // 绕Y轴旋转，初始位置在+Z方向
-    const x = cx + d * Math.sin(angle);
-    const z = cz + d * Math.cos(angle);
-    return new THREE.Vector3(x, cy, z);
+    const normalizedStep = ((step % 4) + 4) % 4; // 确保在0-3范围内
+
+    switch (normalizedStep) {
+      case 0: // 正面（鞋头方向，-X方向）
+        return new THREE.Vector3(cx - d, cy, cz);
+      case 1: // 右侧面（+Z方向）
+        return new THREE.Vector3(cx, cy, cz + d);
+      case 2: // 背面（鞋跟方向，+X方向）
+        return new THREE.Vector3(cx + d, cy, cz);
+      case 3: // 左侧面（-Z方向）
+        return new THREE.Vector3(cx, cy, cz - d);
+      default:
+        return new THREE.Vector3(cx - d, cy, cz);
+    }
   };
 
-  // 初始化视角（侧面，纯水平）
+  // 初始化视角（正面，鞋头方向）
   useEffect(() => {
-    currentAngle.current = 0;
-    const initPos = getCameraPositionFromAngle(0);
-    camera.position.copy(initPos);
+    currentStep.current = 0;
+    const initPos = getCameraPositionFromStep(0);
+    
+    camera.position.set(initPos.x, initPos.y, initPos.z);
     camera.lookAt(shoeCenter[0], shoeCenter[1], shoeCenter[2]);
+    
     targetPos.current.copy(initPos);
     targetLookAt.current.set(shoeCenter[0], shoeCenter[1], shoeCenter[2]);
 
@@ -49,21 +62,22 @@ export const CameraController: React.FC<CameraControllerProps> = ({
       controlsRef.current.target.set(shoeCenter[0], shoeCenter[1], shoeCenter[2]);
       controlsRef.current.update();
     }
-  }, [shoeCenter, cameraDistance]);
+  }, [shoeCenter, cameraDistance, controlsRef]);
 
   // 处理视角切换
   useEffect(() => {
-    // 转左/转右时，lookAt的Y与相机Y一致（纯水平视角）
     const lookAt = new THREE.Vector3(shoeCenter[0], shoeCenter[1], shoeCenter[2]);
     targetLookAt.current.copy(lookAt);
 
     if (presetCamera === 'rotateLeft') {
-      currentAngle.current -= Math.PI / 2;
-      targetPos.current.copy(getCameraPositionFromAngle(currentAngle.current));
+      // 向左旋转90度（逆时针）
+      currentStep.current = ((currentStep.current - 1) + 4) % 4;
+      targetPos.current.copy(getCameraPositionFromStep(currentStep.current));
       isAnimating.current = true;
     } else if (presetCamera === 'rotateRight') {
-      currentAngle.current += Math.PI / 2;
-      targetPos.current.copy(getCameraPositionFromAngle(currentAngle.current));
+      // 向右旋转90度（顺时针）
+      currentStep.current = (currentStep.current + 1) % 4;
+      targetPos.current.copy(getCameraPositionFromStep(currentStep.current));
       isAnimating.current = true;
     } else if (presetCamera === 'top') {
       targetPos.current.set(shoeCenter[0] + 0.01, shoeCenter[1] + cameraDistance, shoeCenter[2] + 0.01);
@@ -72,13 +86,11 @@ export const CameraController: React.FC<CameraControllerProps> = ({
       targetPos.current.set(shoeCenter[0] + 0.01, shoeCenter[1] - cameraDistance, shoeCenter[2] + 0.01);
       isAnimating.current = true;
     } else if (presetCamera === 'free') {
-      // 自由模式：移动到斜上方初始位置
       targetPos.current.set(
         shoeCenter[0] + cameraDistance * 0.7,
         shoeCenter[1] + cameraDistance * 0.3,
         shoeCenter[2] + cameraDistance * 0.7
       );
-      currentAngle.current = Math.atan2(cameraDistance * 0.7, cameraDistance * 0.7);
       isAnimating.current = true;
     }
   }, [presetCamera, rotateCount, shoeCenter, cameraDistance]);

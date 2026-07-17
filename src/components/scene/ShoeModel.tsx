@@ -10,7 +10,7 @@ interface ShoeModelProps {
   partConfigs: Map<PartId, PartConfig>;
   onPartSelect: (partId: PartId | null) => void;
   onModelLoaded?: (parts: PartInfo[]) => void;
-  onShoeBounds?: (bounds: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3 }) => void;
+  onShoeBounds?: (bounds: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3; shoeRotation?: number }) => void;
 }
 
 export const ShoeModel: React.FC<ShoeModelProps> = ({
@@ -123,10 +123,15 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
     groupRef.current.position.y = -scaledMinY;
     groupRef.current.position.z = -rotatedCenter.z;
 
-    // 通知父组件：鞋子的中心点和实际尺寸
+    // 通知父组件：鞋子的中心点、实际尺寸和旋转角度
     if (onShoeBounds) {
       const shoeCenter = new THREE.Vector3(0, rotatedSize.y / 2, 0);
-      onShoeBounds({ center: shoeCenter, size: rotatedSize, frontDir: new THREE.Vector3(0, 0, 1) });
+      onShoeBounds({ 
+        center: shoeCenter, 
+        size: rotatedSize, 
+        frontDir: new THREE.Vector3(0, 0, 1),
+        shoeRotation: yRotation // 输出鞋子的旋转角度
+      });
     }
 
     hasCentered.current = true;

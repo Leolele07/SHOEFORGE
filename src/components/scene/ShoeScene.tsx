@@ -17,7 +17,7 @@ const DEFAULT_MODEL_URL = '/models/shoe.gltf';
 const DEFAULT_MODEL_NAME = 'NIKE SPORTS RUNNING CLASSIC.gltf';
 
 // 存储鞋子边界信息，供CameraController使用
-let shoeBoundsInfo: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3 } | null = null;
+let shoeBoundsInfo: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3; shoeRotation?: number } | null = null;
 
 export const getShoeBoundsInfo = () => shoeBoundsInfo;
 
@@ -25,7 +25,7 @@ const SceneContent: React.FC = () => {
   const presetCamera = useUIStore((s) => s.presetCamera);
   const controlsRef = useRef<any>(null);
   const [shoeCenter, setShoeCenter] = useState<[number, number, number]>([0, 1, 0]);
-  const [cameraDistance, setCameraDistance] = useState(5); // 新增：动态相机距离
+  const [cameraDistance, setCameraDistance] = useState(5);
 
   const showGround = !['free', 'bottom'].includes(presetCamera);
   const shoeOffsetY = ['free', 'bottom'].includes(presetCamera) ? 0.5 : 0;
@@ -83,7 +83,7 @@ const SceneContent: React.FC = () => {
 };
 
 interface ShoeModelWrapperProps {
-  onShoeBounds: (bounds: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3 }) => void;
+  onShoeBounds: (bounds: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3; shoeRotation?: number }) => void;
 }
 
 const ShoeModelWrapper: React.FC<ShoeModelWrapperProps> = ({ onShoeBounds }) => {
