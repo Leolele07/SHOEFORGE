@@ -1,0 +1,100 @@
+@import "tailwindcss";
+@import "./styles/tokens.css";
+@import "./styles/components.css";
+
+/* ── 全局基础样式 ── */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--sf-font-family);
+  font-size: var(--sf-text-base);
+  line-height: var(--sf-leading-normal);
+  color: var(--sf-text-primary);
+  background-color: var(--sf-bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── 链接样式 ── */
+a {
+  color: var(--sf-text-link);
+  text-decoration: none;
+  transition: color var(--sf-duration-fast) var(--sf-easing-default);
+}
+
+a:hover {
+  color: var(--sf-text-link-hover);
+}
+
+/* ── 选中高亮 ── */
+::selection {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: var(--sf-text-primary);
+}
+
+/* ── 焦点样式 ── */
+:focus-visible {
+  outline: 2px solid var(--sf-border-focus);
+  outline-offset: 2px;
+}
+
+/* ── 图片默认样式 ── */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ── 列表默认样式 ── */
+ul, ol {
+  list-style: none;
+}
+
+/* ── 表单元素默认样式 ── */
+button, input, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* ── 触屏优化 ── */
+@media (hover: none) and (pointer: coarse) {
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .btn-sm {
+    min-height: 44px;
+  }
+}
+
+/* ── 打印样式 ── */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+}

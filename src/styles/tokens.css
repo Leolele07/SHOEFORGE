@@ -1,0 +1,197 @@
+/* ── ShoeForge Design Tokens ──
+ * 基于Nike Podium CDS设计系统参考
+ * 所有设计token使用CSS自定义属性
+ */
+
+:root {
+  /* ── 颜色系统 ── */
+  
+  /* 主色调 */
+  --sf-color-primary: #000000;
+  --sf-color-primary-hover: #1a1a1a;
+  --sf-color-primary-active: #333333;
+  --sf-color-primary-disabled: #cccccc;
+  
+  /* 次要色 */
+  --sf-color-secondary: #ffffff;
+  --sf-color-secondary-hover: #f5f5f5;
+  --sf-color-secondary-active: #e5e5e5;
+  --sf-color-secondary-disabled: #f0f0f0;
+  
+  /* 强调色 */
+  --sf-color-accent: #000000;
+  --sf-color-accent-hover: #1a1a1a;
+  --sf-color-accent-active: #333333;
+  
+  /* 状态色 */
+  --sf-color-success: #22c55e;
+  --sf-color-warning: #f59e0b;
+  --sf-color-error: #ef4444;
+  --sf-color-info: #3b82f6;
+  
+  /* 文字颜色 */
+  --sf-text-primary: #111111;
+  --sf-text-secondary: #757575;
+  --sf-text-tertiary: #9e9e9e;
+  --sf-text-disabled: #bdbdbd;
+  --sf-text-inverse: #ffffff;
+  --sf-text-link: #000000;
+  --sf-text-link-hover: #333333;
+  
+  /* 背景颜色 */
+  --sf-bg-primary: #ffffff;
+  --sf-bg-secondary: #f5f5f5;
+  --sf-bg-tertiary: #eeeeee;
+  --sf-bg-dark: #111111;
+  --sf-bg-dark-hover: #1a1a1a;
+  --sf-bg-overlay: rgba(0, 0, 0, 0.5);
+  --sf-bg-scene: #f5f5f5;
+  
+  /* 边框颜色 */
+  --sf-border-primary: #e0e0e0;
+  --sf-border-secondary: #eeeeee;
+  --sf-border-focus: #000000;
+  --sf-border-error: #ef4444;
+  
+  /* ── 间距系统 ── */
+  --sf-space-0: 0px;
+  --sf-space-1: 4px;
+  --sf-space-2: 8px;
+  --sf-space-3: 12px;
+  --sf-space-4: 16px;
+  --sf-space-5: 20px;
+  --sf-space-6: 24px;
+  --sf-space-8: 32px;
+  --sf-space-10: 40px;
+  --sf-space-12: 48px;
+  --sf-space-16: 64px;
+  
+  /* ── 字体系统 ── */
+  --sf-font-family: "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --sf-font-mono: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+  
+  /* 字体大小 */
+  --sf-text-xs: 11px;
+  --sf-text-sm: 13px;
+  --sf-text-base: 15px;
+  --sf-text-lg: 17px;
+  --sf-text-xl: 20px;
+  --sf-text-2xl: 24px;
+  --sf-text-3xl: 28px;
+  --sf-text-4xl: 36px;
+  
+  /* 行高 */
+  --sf-leading-none: 1;
+  --sf-leading-tight: 1.25;
+  --sf-leading-snug: 1.375;
+  --sf-leading-normal: 1.5;
+  --sf-leading-relaxed: 1.625;
+  
+  /* 字重 */
+  --sf-font-normal: 400;
+  --sf-font-medium: 500;
+  --sf-font-semibold: 600;
+  --sf-font-bold: 700;
+  
+  /* ── 圆角系统 ── */
+  --sf-radius-none: 0px;
+  --sf-radius-sm: 4px;
+  --sf-radius-md: 8px;
+  --sf-radius-lg: 12px;
+  --sf-radius-xl: 16px;
+  --sf-radius-2xl: 24px;
+  --sf-radius-full: 9999px;
+  
+  /* ── 阴影系统 ── */
+  --sf-shadow-none: none;
+  --sf-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --sf-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --sf-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --sf-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  
+  /* ── 动画系统 ── */
+  --sf-duration-fast: 150ms;
+  --sf-duration-normal: 250ms;
+  --sf-duration-slow: 350ms;
+  --sf-duration-slower: 500ms;
+  
+  --sf-easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --sf-easing-in: cubic-bezier(0.4, 0, 1, 1);
+  --sf-easing-out: cubic-bezier(0, 0, 0.2, 1);
+  --sf-easing-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --sf-easing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  /* ── 按钮系统 ── */
+  /* 按钮高度 */
+  --sf-btn-height-sm: 32px;
+  --sf-btn-height-md: 40px;
+  --sf-btn-height-lg: 48px;
+  --sf-btn-height-xl: 56px;
+  
+  /* 按钮内边距 */
+  --sf-btn-padding-sm: 0 var(--sf-space-3);
+  --sf-btn-padding-md: 0 var(--sf-space-4);
+  --sf-btn-padding-lg: 0 var(--sf-space-6);
+  --sf-btn-padding-xl: 0 var(--sf-space-8);
+  
+  /* 按钮字体大小 */
+  --sf-btn-font-sm: var(--sf-text-sm);
+  --sf-btn-font-md: var(--sf-text-base);
+  --sf-btn-font-lg: var(--sf-text-lg);
+  --sf-btn-font-xl: var(--sf-text-xl);
+  
+  /* ── 输入框系统 ── */
+  --sf-input-height-sm: 32px;
+  --sf-input-height-md: 40px;
+  --sf-input-height-lg: 48px;
+  
+  --sf-input-padding-sm: 0 var(--sf-space-3);
+  --sf-input-padding-md: 0 var(--sf-space-4);
+  --sf-input-padding-lg: 0 var(--sf-space-4);
+  
+  /* ── 断点系统 ── */
+  --sf-breakpoint-sm: 640px;
+  --sf-breakpoint-md: 768px;
+  --sf-breakpoint-lg: 1024px;
+  --sf-breakpoint-xl: 1280px;
+  --sf-breakpoint-2xl: 1536px;
+  
+  /* ── z-index系统 ── */
+  --sf-z-base: 0;
+  --sf-z-dropdown: 100;
+  --sf-z-sticky: 200;
+  --sf-z-overlay: 300;
+  --sf-z-modal: 400;
+  --sf-z-popover: 500;
+  --sf-z-tooltip: 600;
+  --sf-z-toast: 700;
+  
+  /* ── 组件尺寸 ── */
+  /* 顶栏高度 */
+  --sf-topbar-height: 56px;
+  
+  /* 侧边栏宽度 */
+  --sf-sidebar-width-sm: 240px;
+  --sf-sidebar-width-md: 280px;
+  --sf-sidebar-width-lg: 320px;
+  
+  /* 底部栏高度 */
+  --sf-bottombar-height: 64px;
+  
+  /* 色块尺寸 */
+  --sf-swatch-size-sm: 32px;
+  --sf-swatch-size-md: 40px;
+  --sf-swatch-size-lg: 48px;
+  
+  /* 缩略图尺寸 */
+  --sf-thumbnail-size-sm: 40px;
+  --sf-thumbnail-size-md: 56px;
+  --sf-thumbnail-size-lg: 72px;
+}
+
+/* ── 暗色模式（预留） ── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 可以在这里覆盖暗色模式的token */
+  }
+}
