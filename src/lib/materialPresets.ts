@@ -49,6 +49,19 @@ export function updateMaterialProperties(
   material.roughness = preset.roughness;
   material.metalness = preset.metalness;
   
+  // 处理透明材质
+  if (materialType === 'transparent') {
+    material.transparent = true;
+    material.opacity = 0.5;
+    material.depthWrite = false;
+    material.side = THREE.DoubleSide;
+  } else {
+    material.transparent = false;
+    material.opacity = 1;
+    material.depthWrite = true;
+    material.side = THREE.FrontSide;
+  }
+  
   // 标记材质需要更新
   material.needsUpdate = true;
 }

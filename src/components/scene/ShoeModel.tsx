@@ -167,9 +167,25 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
         obj.castShadow = true;
         obj.receiveShadow = true;
         
-        // 克隆材质以支持独立颜色修改
+        // 克隆材质并设置为白色默认材质
         if (obj.material && obj.material instanceof THREE.Material) {
-          obj.material = obj.material.clone();
+          const oldMaterial = obj.material;
+          // 创建新的白色标准材质
+          const newMaterial = new THREE.MeshStandardMaterial({
+            color: new THREE.Color('#FFFFFF'),
+            roughness: 0.9,
+            metalness: 0.0,
+          });
+          
+          // 保留法线贴图等细节（如果有）
+          if (oldMaterial instanceof THREE.MeshStandardMaterial) {
+            if (oldMaterial.normalMap) {
+              newMaterial.normalMap = oldMaterial.normalMap;
+              newMaterial.normalScale = oldMaterial.normalScale.clone();
+            }
+          }
+          
+          obj.material = newMaterial;
         }
       }
       
@@ -192,14 +208,8 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
       // 尝试识别部件组
       const partGroup = identifyPartGroup(partId);
       
-      // 获取默认颜色（从第一个mesh）
-      let defaultColor = '#FFFFFF';
-      for (const mesh of meshes) {
-        if (mesh.material instanceof THREE.MeshStandardMaterial) {
-          defaultColor = '#' + mesh.material.color.getHexString();
-          break;
-        }
-      }
+      // 默认颜色为白色
+      const defaultColor = '#FFFFFF';
       
       parts.push({
         id: partId as PartId,
