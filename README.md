@@ -17,6 +17,7 @@
 ### 核心功能
 - **3D 模型加载** - 支持 GLB/GLTF 格式鞋子模型
 - **部件选择** - 点击 3D 模型或列表选择可定制部件
+- **Rhino图层支持** - 自动识别Rhino导出的GLTF图层结构
 - **颜色定制** - 20 种预设颜色 + 自定义颜色选择器
 - **材质定制** - 6 种 PBR 材质（皮革/网面/麂皮/帆布/光面/金属）
 - **多视角切换** - 7 种预设视角（正面/侧面左/侧面右/背面/顶部/底部/自由）
@@ -85,6 +86,28 @@ npm run preview
 4. **切换材质** - 在右侧面板选择材质类型
 5. **切换视角** - 点击底部视角按钮
 
+### Rhino图层设置指南
+
+在Rhino中设置图层，导出GLTF后可在ShoeForge中自动识别：
+
+1. **创建图层** - 在Rhino中为每个部件创建独立图层（如"鞋面"、"中底"、"鞋舌"等）
+2. **分配对象** - 将对应的网格对象分配到对应图层
+3. **导出GLTF** - 使用Rhino的GLTF导出功能
+4. **导入ShoeForge** - 在ShoeForge中上传GLTF文件，部件将自动识别
+
+**支持的部件名称**：
+- 鞋面 (upper)
+- 中底 (midsole)
+- 外底 (outsole)
+- 鞋舌 (tongue)
+- 鞋带 (lace)
+- 内衬 (lining)
+- 后跟 (heel)
+- 标志 (swoosh)
+- 配饰 (accessory)
+
+**英文名称也支持**：Upper, Midsole, Outsole, Tongue, Lace, Lining, Heel, Swoosh, Logo
+
 ### 视角控制
 
 | 视角 | 鼠标左键 | 中键/滚轮按下 | 滚轮 | 说明 |
@@ -109,7 +132,7 @@ npm run preview
 ```
 shoe-forge/
 ├── public/
-│   ├── models/          # 3D 模型文件
+│   ├── models/          # 3D 模型文件（支持Rhino导出的GLTF/GLB）
 │   └── textures/        # 材质贴图
 ├── src/
 │   ├── components/
@@ -118,7 +141,7 @@ shoe-forge/
 │   │   └── panel/       # 面板组件（ColorPicker, MaterialPicker）
 │   ├── store/           # Zustand 状态管理
 │   ├── hooks/           # 自定义 Hooks
-│   ├── lib/             # 工具函数
+│   ├── lib/             # 工具函数（包含节点层次结构解析）
 │   ├── styles/          # 样式文件（tokens, components）
 │   └── types/           # TypeScript 类型定义
 ├── package.json
@@ -156,6 +179,12 @@ shoe-forge/
 ---
 
 ## 版本历史
+
+### v1.0.5 (2026-07-17) - Rhino图层部件选择修复
+- **核心改进**：使用节点层次结构识别部件，解决Rhino导出GLTF后部件无法选中的问题
+- **技术方案**：遍历GLTF节点树，通过有名称的部件组（如"中底"、"鞋面"等）识别部件
+- **优势**：支持任何3D软件导出的GLTF/GLB模型，不再依赖mesh名称
+- **兼容性**：保留v1.0.4的所有功能，同时增强模型兼容性
 
 ### v1.0.4 (2026-07-17) - 视觉优化与材质调整
 - 视觉中心点始终在鞋子模型中心，不再依赖地平面中心
