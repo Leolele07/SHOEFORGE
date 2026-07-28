@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useCustomizationStore } from '@/store/customizationStore';
 import { ColorPicker } from './ColorPicker';
 import { MaterialPicker } from './MaterialPicker';
+import { TextureUploader } from './TextureUploader';
+import { TextureTransformControls } from './TextureTransformControls';
 import { MATERIAL_NAMES } from '@/types';
 
-type TabType = 'color' | 'material';
+type TabType = 'color' | 'material' | 'texture';
 
 export const CustomizationPanel: React.FC = () => {
-  const { selectedPartId, partConfigs, parts, updatePartColor, updatePartMaterial, resetPart } = useCustomizationStore();
+  const { selectedPartId, partConfigs, parts, updatePartColor, updatePartMaterial, updatePartTextures, resetPart } = useCustomizationStore();
   const [activeTab, setActiveTab] = useState<TabType>('color');
 
   // 获取当前选中的部件
@@ -116,21 +118,66 @@ export const CustomizationPanel: React.FC = () => {
           </svg>
           材质
         </button>
+        <button
+          className={`customize-tab ${activeTab === 'texture' ? 'active' : ''}`}
+          onClick={() => setActiveTab('texture')}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          贴图
+        </button>
       </div>
 
       {/* 内容区域 */}
       <div className="customize-content">
-        {activeTab === 'color' ? (
+        {activeTab === 'color' && (
           <ColorPicker
             currentColor={selectedConfig.color}
             onColorChange={(color) => updatePartColor(selectedPartId, color)}
             onReset={() => resetPart(selectedPartId)}
           />
-        ) : (
+        )}
+        {activeTab === 'material' && (
           <MaterialPicker
             currentMaterial={selectedConfig.materialType}
             onMaterialChange={(type) => updatePartMaterial(selectedPartId, type)}
           />
+        )}
+        {activeTab === 'texture' && (
+          <div className="texture-panel">
+            {/* 贴图上传 */}
+            <TextureUploader
+              onTextureAdd={(texture) => {
+                const currentTextures = selectedConfig.textures || [];
+                updatePartTextures(selectedPartId, [...currentTextures, texture]);
+              }}
+            />
+
+            {/* 已添加的贴图列表 */}
+            {selectedConfig.textures && selectedConfig.textures.length > 0 && (
+              <div className="texture-list">
+                <h4 className="texture-list-title">已添加贴图</h4>
+                {selectedConfig.textures.map((texture, index) => (
+                  <TextureTransformControls
+                    key={index}
+                    texture={texture}
+                    onUpdate={(transform) => {
+                      const newTextures = [...selectedConfig.textures!];
+                      newTextures[index] = { ...texture, transform };
+                      updatePartTextures(selectedPartId, newTextures);
+                    }}
+                    onRemove={() => {
+                      const newTextures = selectedConfig.textures!.filter((_, i) => i !== index);
+                      updatePartTextures(selectedPartId, newTextures);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -225,6 +272,25 @@ export const CustomizationPanel: React.FC = () => {
           flex: 1;
           overflow-y: auto;
           padding: var(--sf-space-4);
+        }
+
+        .texture-panel {
+          display: flex;
+          flex-direction: column;
+          gap: var(--sf-space-6);
+        }
+
+        .texture-list {
+          display: flex;
+          flex-direction: column;
+          gap: var(--sf-space-4);
+        }
+
+        .texture-list-title {
+          font-size: var(--sf-text-sm);
+          font-weight: var(--sf-font-semibold);
+          color: var(--sf-text-secondary);
+          margin: 0;
         }
       `}</style>
     </div>

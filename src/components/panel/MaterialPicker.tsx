@@ -7,7 +7,7 @@ interface MaterialPickerProps {
   onMaterialChange: (type: MaterialType) => void;
 }
 
-const materialTypes: MaterialType[] = ['leather', 'mesh', 'suede', 'canvas', 'patent', 'metallic'];
+const materialTypes: MaterialType[] = ['leather', 'mesh', 'suede', 'canvas', 'patent', 'metallic', 'plastic', 'rubber', 'fabric', 'carbon', 'transparent'];
 
 export const MaterialPicker: React.FC<MaterialPickerProps> = ({
   currentMaterial,
@@ -250,6 +250,16 @@ function getMaterialGradient(type: MaterialType): string {
       return 'linear-gradient(135deg, #1A1A1A 0%, #333333 30%, #000000 70%, #1A1A1A 100%)';
     case 'metallic':
       return 'linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 30%, #A0A0A0 70%, #D0D0D0 100%)';
+    case 'plastic':
+      return 'linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 50%, #FF4444 100%)';
+    case 'rubber':
+      return 'linear-gradient(135deg, #2C3E50 0%, #34495E 50%, #1A252F 100%)';
+    case 'fabric':
+      return 'linear-gradient(135deg, #8B7355 0%, #A08B6E 50%, #766247 100%)';
+    case 'carbon':
+      return 'linear-gradient(135deg, #1A1A1A 0%, #333333 25%, #1A1A1A 50%, #333333 75%, #1A1A1A 100%)';
+    case 'transparent':
+      return 'linear-gradient(135deg, rgba(200,200,255,0.3) 0%, rgba(200,200,255,0.6) 50%, rgba(200,200,255,0.3) 100%)';
     default:
       return 'linear-gradient(135deg, #808080 0%, #A0A0A0 100%)';
   }

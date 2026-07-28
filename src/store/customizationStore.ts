@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { PartId, PartConfig, MaterialType, PartInfo, DesignPreset } from '@/types';
+import type { PartId, PartConfig, MaterialType, PartInfo, DesignPreset, TextureConfig } from '@/types';
 import { useHistoryStore } from './historyStore';
 
 interface CustomizationState {
@@ -11,6 +11,7 @@ interface CustomizationState {
   updatePartColor: (partId: PartId, color: string) => void;
   updatePartMaterial: (partId: PartId, materialType: MaterialType) => void;
   updatePartAdvanced: (partId: PartId, roughness?: number, metalness?: number) => void;
+  updatePartTextures: (partId: PartId, textures: TextureConfig[]) => void;
   togglePartVisibility: (partId: PartId) => void;
   resetPart: (partId: PartId) => void;
   resetAll: () => void;
@@ -77,6 +78,22 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
         ...(roughness !== undefined && { roughness }),
         ...(metalness !== undefined && { metalness }),
       });
+      set({ partConfigs: newConfigs });
+    }
+  },
+
+  updatePartTextures: (partId, textures) => {
+    const { partConfigs } = get();
+    const { pushState } = useHistoryStore.getState();
+    
+    // 保存当前状态到历史
+    pushState(new Map(partConfigs));
+    
+    const newConfigs = new Map(partConfigs);
+    const existing = newConfigs.get(partId);
+    
+    if (existing) {
+      newConfigs.set(partId, { ...existing, textures });
       set({ partConfigs: newConfigs });
     }
   },

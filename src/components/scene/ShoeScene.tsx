@@ -52,21 +52,34 @@ const SceneContent: React.FC = () => {
     <>
       <color attach="background" args={['#f5f5f5']} />
 
-      <ambientLight intensity={0.6} />
+      {/* 改进的光照系统 */}
+      <ambientLight intensity={0.4} />
+      
+      {/* 主光源：从右上方照射，产生主要阴影 */}
       <directionalLight
         position={[5, 8, 5]}
-        intensity={1.2}
+        intensity={1.5}
         castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
         shadow-camera-far={20}
         shadow-camera-left={-5}
         shadow-camera-right={5}
         shadow-camera-top={5}
         shadow-camera-bottom={-5}
       />
-      <directionalLight position={[-3, 4, -3]} intensity={0.3} />
-      <hemisphereLight args={['#b1e1ff', '#b97a20', 0.3]} />
+      
+      {/* 补光源：从左上方照射，减少阴影过暗 */}
+      <directionalLight position={[-3, 6, -3]} intensity={0.5} />
+      
+      {/* 底部补光：从下方照射，照亮鞋底 */}
+      <directionalLight position={[0, -2, 0]} intensity={0.2} />
+      
+      {/* 环境光：模拟天空光 */}
+      <hemisphereLight args={['#b1e1ff', '#b97a20', 0.4]} />
+      
+      {/* 点光源：模拟反射光 */}
+      <pointLight position={[0, 3, 0]} intensity={0.3} color="#ffffff" />
 
       <Ground visible={showGround} />
 

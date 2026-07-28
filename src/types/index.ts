@@ -10,7 +10,12 @@ export type MaterialType =
   | 'suede'        // 麂皮
   | 'canvas'       // 帆布
   | 'patent'       // 光面
-  | 'metallic';    // 金属
+  | 'metallic'     // 金属
+  | 'plastic'      // 塑料
+  | 'rubber'       // 橡胶
+  | 'fabric'       // 布料
+  | 'carbon'       // 碳纤维
+  | 'transparent'; // 透明
 
 // ── 部件分组 ──
 export type PartGroup = 
@@ -25,14 +30,31 @@ export type PartGroup =
   | 'accessory'    // 配饰
   | 'other';       // 其他
 
+// ── 贴图变换参数 ──
+export interface TextureTransform {
+  offsetX: number;        // X偏移 0-1
+  offsetY: number;        // Y偏移 0-1
+  scaleX: number;         // X缩放 0.1-10
+  scaleY: number;         // Y缩放 0.1-10
+  rotation: number;       // 旋转角度 0-360
+}
+
+// ── 贴图配置 ──
+export interface TextureConfig {
+  url: string;            // 贴图URL（base64或blob URL）
+  type: 'color' | 'normal' | 'roughness' | 'metalness';
+  transform: TextureTransform;
+}
+
 // ── 单个部件的定制配置 ──
 export interface PartConfig {
   partId: PartId;
   color: string;            // Hex 颜色 #RRGGBB
   materialType: MaterialType;
-  roughness?: number;       // 0-1, 仅高级模式
-  metalness?: number;       // 0-1, 仅高级模式
+  roughness?: number;       // 0-1
+  metalness?: number;       // 0-1
   visible: boolean;
+  textures?: TextureConfig[];  // 贴图配置数组
 }
 
 // ── 完整方案 ──
@@ -108,6 +130,11 @@ export const MATERIAL_PRESETS: Record<MaterialType, PBRParams> = {
   canvas: { roughness: 0.85, metalness: 0.0, normalScale: 0.6 },
   patent: { roughness: 0.2, metalness: 0.3, normalScale: 0.3 },
   metallic: { roughness: 0.3, metalness: 0.9, normalScale: 0.4 },
+  plastic: { roughness: 0.6, metalness: 0.1, normalScale: 0.3 },
+  rubber: { roughness: 0.9, metalness: 0.0, normalScale: 0.7 },
+  fabric: { roughness: 0.95, metalness: 0.0, normalScale: 0.9 },
+  carbon: { roughness: 0.4, metalness: 0.6, normalScale: 1.2 },
+  transparent: { roughness: 0.1, metalness: 0.0, normalScale: 0.2 },
 };
 
 // ── 材质显示名称 ──
@@ -118,6 +145,11 @@ export const MATERIAL_NAMES: Record<MaterialType, string> = {
   canvas: '帆布',
   patent: '光面',
   metallic: '金属',
+  plastic: '塑料',
+  rubber: '橡胶',
+  fabric: '布料',
+  carbon: '碳纤维',
+  transparent: '透明',
 };
 
 // ── 材质描述 ──
@@ -128,6 +160,11 @@ export const MATERIAL_DESCRIPTIONS: Record<MaterialType, string> = {
   canvas: '轻便帆布，休闲风格',
   patent: '亮面处理，时尚感强',
   metallic: '金属光泽，未来感十足',
+  plastic: '光滑塑料，适合装饰件',
+  rubber: '弹性橡胶，适合鞋底',
+  fabric: '柔软布料，舒适透气',
+  carbon: '碳纤维纹理，高端运动风',
+  transparent: '透明材质，适合装饰',
 };
 
 // ── 部件分组显示名称 ──

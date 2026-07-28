@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { PartId, PartConfig, PartInfo, PartGroup } from '@/types';
-import { updateMaterialProperties } from '@/lib/materialPresets';
+import { updateMaterialProperties, applyTextureToMaterial } from '@/lib/materialPresets';
 
 interface ShoeModelProps {
   url: string;
@@ -232,15 +232,45 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
       
       // 为该部件的所有mesh应用配置
       for (const mesh of meshes) {
-        if (mesh.material instanceof THREE.MeshStandardMaterial) {
-          updateMaterialProperties(mesh.material, config.materialType, config.color);
-          if (config.roughness !== undefined) {
-            mesh.material.roughness = config.roughness;
-          }
-          if (config.metalness !== undefined) {
-            mesh.material.metalness = config.metalness;
+        // 确保材质是MeshStandardMaterial
+        if (!(mesh.material instanceof THREE.MeshStandardMaterial)) {
+          // 如果不是，创建一个新的标准材质
+          const oldMaterial = mesh.material;
+          mesh.material = new THREE.MeshStandardMaterial();
+          // 复制原材质的属性
+          if (oldMaterial instanceof THREE.Material) {
+            // 复制基本属性
+            if ('color' in oldMaterial) {
+              (mesh.material as THREE.MeshStandardMaterial).color = (oldMaterial as any).color;
+            }
           }
         }
+        
+        const material = mesh.material as THREE.MeshStandardMaterial;
+        
+        // 清除可能影响颜色的贴图
+        material.map = null;
+        material.normalMap = null;
+        material.roughnessMap = null;
+        material.metalnessMap = null;
+        
+        // 更新材质属性
+        updateMaterialProperties(material, config.materialType, config.color);
+        
+        if (config.roughness !== undefined) {
+          material.roughness = config.roughness;
+        }
+        if (config.metalness !== undefined) {
+          material.metalness = config.metalness;
+        }
+        
+        // 应用贴图
+        if (config.textures && config.textures.length > 0) {
+          for (const textureConfig of config.textures) {
+            applyTextureToMaterial(material, textureConfig);
+          }
+        }
+        
         mesh.visible = config.visible;
       }
     });
