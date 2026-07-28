@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import type { PartId, PartConfig, PartInfo, PartGroup, MaterialType } from '@/types';
+import type { PartId, PartConfig, PartInfo, PartGroup } from '@/types';
 import { updateMaterialProperties } from '@/lib/materialPresets';
 
 interface ShoeModelProps {
@@ -143,22 +143,75 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
 
     const parts: PartInfo[] = [];
 
-    scene.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.userData = {
-          ...child.userData,
-          partId: child.name as PartId,
+    // 创建partId到mesh的映射
+    const partMeshMap = new Map<string, THREE.Mesh[]>();
+
+    // 递归遍历场景，找到所有mesh及其所属的部件组
+    function traverseWithPartId(obj: THREE.Object3D, currentPartId: string | null) {
+      if (obj instanceof THREE.Mesh) {
+        // 确定partId：优先使用当前部件组ID，否则使用mesh名称
+        const partId = currentPartId || obj.name || 'unknown';
+        
+        // 将mesh添加到对应的部件组
+        if (!partMeshMap.has(partId)) {
+          partMeshMap.set(partId, []);
+        }
+        partMeshMap.get(partId)!.push(obj);
+        
+        // 设置userData
+        obj.userData = {
+          ...obj.userData,
+          partId: partId,
           isShoePart: true,
         };
-        child.castShadow = true;
-        child.receiveShadow = true;
-
-        const partInfo = identifyPart(child);
-        if (partInfo) {
-          parts.push(partInfo);
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+        
+        // 克隆材质以支持独立颜色修改
+        if (obj.material && obj.material instanceof THREE.Material) {
+          obj.material = obj.material.clone();
         }
       }
+      
+      // 检查子节点是否是部件组（有名称且包含mesh的组）
+      for (const child of obj.children) {
+        if (child.name && child.name !== 'Sketchfab_model' && child.name !== 'Collada visual scene group') {
+          // 这是一个部件组
+          traverseWithPartId(child, child.name);
+        } else {
+          // 继续使用当前的partId
+          traverseWithPartId(child, currentPartId);
+        }
+      }
+    }
+    
+    traverseWithPartId(scene, null);
+    
+    // 为每个部件组创建PartInfo
+    partMeshMap.forEach((meshes, partId) => {
+      // 尝试识别部件组
+      const partGroup = identifyPartGroup(partId);
+      
+      // 获取默认颜色（从第一个mesh）
+      let defaultColor = '#FFFFFF';
+      for (const mesh of meshes) {
+        if (mesh.material instanceof THREE.MeshStandardMaterial) {
+          defaultColor = '#' + mesh.material.color.getHexString();
+          break;
+        }
+      }
+      
+      parts.push({
+        id: partId as PartId,
+        name: partGroup?.name || partId,
+        group: partGroup?.group || 'accessory',
+        defaultColor,
+        meshes,
+      });
     });
+    
+    // 将映射存储到全局变量，供后续使用
+    (window as any).partMeshMap = partMeshMap;
 
     if (onModelLoaded && parts.length > 0) {
       onModelLoaded(parts);
@@ -169,23 +222,26 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
   useEffect(() => {
     if (!scene || !partConfigs) return;
 
-    scene.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        const partId = child.name as PartId;
-        const config = partConfigs.get(partId);
+    const partMeshMap = (window as any).partMeshMap as Map<string, THREE.Mesh[]>;
+    if (!partMeshMap) return;
 
-        if (config) {
-          if (child.material instanceof THREE.MeshStandardMaterial) {
-            updateMaterialProperties(child.material, config.materialType, config.color);
-            if (config.roughness !== undefined) {
-              child.material.roughness = config.roughness;
-            }
-            if (config.metalness !== undefined) {
-              child.material.metalness = config.metalness;
-            }
+    // 遍历所有部件配置
+    partConfigs.forEach((config, partId) => {
+      const meshes = partMeshMap.get(partId);
+      if (!meshes) return;
+      
+      // 为该部件的所有mesh应用配置
+      for (const mesh of meshes) {
+        if (mesh.material instanceof THREE.MeshStandardMaterial) {
+          updateMaterialProperties(mesh.material, config.materialType, config.color);
+          if (config.roughness !== undefined) {
+            mesh.material.roughness = config.roughness;
           }
-          child.visible = config.visible;
+          if (config.metalness !== undefined) {
+            mesh.material.metalness = config.metalness;
+          }
         }
+        mesh.visible = config.visible;
       }
     });
   }, [scene, partConfigs]);
@@ -194,7 +250,7 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
     event.stopPropagation();
     const mesh = event.object as THREE.Mesh;
     const partId = mesh.userData.partId as PartId;
-    if (partId) {
+    if (partId && partId !== 'unknown') {
       onPartSelect(partId);
     }
   };
@@ -228,63 +284,44 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
   );
 };
 
-function identifyPart(mesh: THREE.Mesh): PartInfo | null {
-  const name = mesh.name.toLowerCase();
-  const partGroup = identifyPartGroup(name);
-  if (!partGroup) return null;
+function identifyPartGroup(name: string): { name: string; group: PartGroup } | null {
+  const partKeywords: Record<string, { name: string; group: PartGroup }> = {
+    '中底': { name: '中底', group: 'midsole' },
+    '鞋带边': { name: '鞋带边', group: 'lace' },
+    '鞋眼片': { name: '鞋眼片', group: 'lace' },
+    '鞋面': { name: '鞋面', group: 'upper' },
+    '金属帽': { name: '金属帽', group: 'accessory' },
+    '内里': { name: '内里', group: 'lining' },
+    '橡胶鞋底': { name: '橡胶鞋底', group: 'outsole' },
+    'LOGO外': { name: 'LOGO外', group: 'swoosh' },
+    'LOGO内': { name: 'LOGO内', group: 'swoosh' },
+    '鞋带外': { name: '鞋带外', group: 'lace' },
+    '后跟TPU': { name: '后跟TPU', group: 'heel' },
+    '鞋舌内': { name: '鞋舌内', group: 'tongue' },
+    '鞋舌外': { name: '鞋舌外', group: 'tongue' },
+    'Upper': { name: '鞋面', group: 'upper' },
+    'Midsole': { name: '中底', group: 'midsole' },
+    'Outsole': { name: '外底', group: 'outsole' },
+    'Tongue': { name: '鞋舌', group: 'tongue' },
+    'Lace': { name: '鞋带', group: 'lace' },
+    'Lining': { name: '内衬', group: 'lining' },
+    'Heel': { name: '后跟', group: 'heel' },
+    'Swoosh': { name: '标志', group: 'swoosh' },
+    'Logo': { name: '标志', group: 'swoosh' },
+  };
 
-  let defaultColor = '#FFFFFF';
-  if (mesh.material instanceof THREE.MeshStandardMaterial) {
-    defaultColor = '#' + mesh.material.color.getHexString();
+  // 直接匹配
+  if (partKeywords[name]) {
+    return partKeywords[name];
   }
 
-  return {
-    partId: mesh.name as PartId,
-    name: getPartDisplayName(partGroup),
-    meshName: mesh.name,
-    defaultColor,
-    defaultMaterial: identifyMaterialType(mesh),
-    group: partGroup,
-  };
-}
-
-function identifyPartGroup(name: string): PartGroup | null {
-  const partKeywords: Record<PartGroup, string[]> = {
-    upper: ['upper', 'shoe', 'body', 'main'],
-    midsole: ['midsole', 'middle'],
-    outsole: ['outsole', 'bottom', 'sole'],
-    tongue: ['tongue'],
-    lace: ['lace', 'string'],
-    lining: ['lining', 'inner'],
-    heel: ['heel', 'back'],
-    swoosh: ['swoosh', 'logo'],
-    other: ['other', 'accessory'],
-  };
-
-  for (const [group, keywords] of Object.entries(partKeywords)) {
-    if (keywords.some((keyword) => name.includes(keyword))) {
-      return group as PartGroup;
+  // 关键词匹配
+  const lowerName = name.toLowerCase();
+  for (const [key, value] of Object.entries(partKeywords)) {
+    if (lowerName.includes(key.toLowerCase())) {
+      return value;
     }
   }
-  return 'other';
-}
 
-function identifyMaterialType(_mesh: THREE.Mesh): MaterialType {
-  // 所有材质默认为网布
-  return 'mesh';
-}
-
-function getPartDisplayName(group: PartGroup): string {
-  const names: Record<PartGroup, string> = {
-    upper: '鞋面',
-    midsole: '中底',
-    outsole: '外底',
-    tongue: '鞋舌',
-    lace: '鞋带',
-    lining: '内衬',
-    heel: '后跟',
-    swoosh: '标志',
-    other: '其他',
-  };
-  return names[group] || '未知部件';
+  return { name: name, group: 'other' };
 }

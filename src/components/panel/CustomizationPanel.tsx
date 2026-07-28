@@ -11,7 +11,7 @@ export const CustomizationPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('color');
 
   // 获取当前选中的部件
-  const selectedPart = parts.find((p) => p.partId === selectedPartId);
+  const selectedPart = parts.find((p) => p.id === selectedPartId);
   const selectedConfig = selectedPartId ? partConfigs.get(selectedPartId) : null;
 
   if (!selectedPart || !selectedConfig || !selectedPartId) {

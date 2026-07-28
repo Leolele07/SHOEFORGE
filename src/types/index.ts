@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 // ── 部件标识 ──
 export type PartId = string & { readonly __brand: 'PartId' };
 
@@ -20,6 +22,7 @@ export type PartGroup =
   | 'lining'       // 内衬
   | 'heel'         // 后跟
   | 'swoosh'       // 标志
+  | 'accessory'    // 配饰
   | 'other';       // 其他
 
 // ── 单个部件的定制配置 ──
@@ -54,12 +57,11 @@ export interface ModelMetadata {
 }
 
 export interface PartInfo {
-  partId: PartId;
+  id: PartId;
   name: string;             // 显示名，如"鞋面"、"鞋舌"、"中底"
-  meshName: string;         // GLB 中的原始节点名
-  defaultColor: string;
-  defaultMaterial: MaterialType;
   group: PartGroup;         // 部件分组
+  defaultColor: string;
+  meshes: THREE.Mesh[];     // 包含的网格对象
 }
 
 // ── PBR 材质参数 ──
@@ -138,5 +140,6 @@ export const PART_GROUP_NAMES: Record<PartGroup, string> = {
   lining: '内衬',
   heel: '后跟',
   swoosh: '标志',
+  accessory: '配饰',
   other: '其他',
 };

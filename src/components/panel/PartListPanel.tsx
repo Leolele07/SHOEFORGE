@@ -37,16 +37,16 @@ export const PartListPanel: React.FC = () => {
               {/* 部件列表 */}
               <div className="part-group-items">
                 {partsInGroup.map((part) => {
-                  const config = partConfigs.get(part.partId);
+                  const config = partConfigs.get(part.id);
                   if (!config) return null;
 
-                  const isSelected = selectedPartId === part.partId;
+                  const isSelected = selectedPartId === part.id;
 
                   return (
                     <div
-                      key={part.partId}
+                      key={part.id}
                       className={`part-item ${isSelected ? 'selected' : ''}`}
-                      onClick={() => selectPart(part.partId)}
+                      onClick={() => selectPart(part.id)}
                     >
                       {/* 颜色指示器 */}
                       <div
@@ -71,7 +71,7 @@ export const PartListPanel: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          togglePartVisibility(part.partId);
+                          togglePartVisibility(part.id);
                         }}
                         className={`part-item-visibility ${!config.visible ? 'hidden' : ''}`}
                         title={config.visible ? '隐藏部件' : '显示部件'}

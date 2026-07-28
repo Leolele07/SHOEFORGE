@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { ModelMetadata, PartInfo, PartId, PartGroup, MaterialType } from '@/types';
+import type { ModelMetadata, PartInfo, PartId, PartGroup } from '@/types';
 
 /**
  * 从GLB场景中提取模型元数据
@@ -56,16 +56,12 @@ function identifyPart(mesh: THREE.Mesh): PartInfo | null {
     defaultColor = '#' + mesh.material.color.getHexString();
   }
 
-  // 获取默认材质类型
-  const defaultMaterial = identifyMaterialType(mesh);
-
   return {
-    partId: mesh.name as PartId,
+    id: mesh.name as PartId,
     name: getPartDisplayName(partGroup),
-    meshName: mesh.name,
-    defaultColor,
-    defaultMaterial,
     group: partGroup,
+    defaultColor,
+    meshes: [mesh],
   };
 }
 
@@ -82,7 +78,8 @@ function identifyPartGroup(name: string): PartGroup | null {
     lining: ['lining', 'inner', '内衬'],
     heel: ['heel', 'back', '后跟'],
     swoosh: ['swoosh', 'logo', '标志', 'logo'],
-    other: ['other', 'accessory', '其他'],
+    accessory: ['accessory', '配饰', '金属', '扣', '环'],
+    other: ['other', '其他'],
   };
 
   for (const [group, keywords] of Object.entries(partKeywords)) {
@@ -93,33 +90,6 @@ function identifyPartGroup(name: string): PartGroup | null {
 
   // 如果无法识别，返回'other'
   return 'other';
-}
-
-/**
- * 识别材质类型
- */
-function identifyMaterialType(mesh: THREE.Mesh): MaterialType {
-  if (!(mesh.material instanceof THREE.MeshStandardMaterial)) {
-    return 'leather';
-  }
-
-  const material = mesh.material;
-  
-  // 根据材质属性推断类型
-  if (material.metalness > 0.7) {
-    return 'metallic';
-  }
-  
-  if (material.roughness < 0.3) {
-    return 'patent';
-  }
-  
-  if (material.roughness > 0.8) {
-    return 'suede';
-  }
-
-  // 默认返回皮革
-  return 'leather';
 }
 
 /**
@@ -135,6 +105,7 @@ function getPartDisplayName(group: PartGroup): string {
     lining: '内衬',
     heel: '后跟',
     swoosh: '标志',
+    accessory: '配饰',
     other: '其他',
   };
 

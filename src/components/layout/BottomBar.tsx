@@ -8,7 +8,7 @@ export const BottomBar: React.FC = () => {
   const [activeTab, setActiveTab] = useState<BottomTabType | null>(null);
   const [showPanel, setShowPanel] = useState(false);
 
-  const selectedPart = parts.find((p) => p.partId === selectedPartId);
+  const selectedPart = parts.find((p) => p.id === selectedPartId);
 
   const handleTabClick = (tab: BottomTabType) => {
     if (activeTab === tab && showPanel) {
@@ -69,16 +69,16 @@ export const BottomBar: React.FC = () => {
             {activeTab === 'parts' && (
               <div className="bottombar-parts-list">
                 {parts.map((part) => {
-                  const config = partConfigs.get(part.partId);
+                  const config = partConfigs.get(part.id);
                   if (!config) return null;
                   return (
                     <button
-                      key={part.partId}
+                      key={part.id}
                       onClick={() => {
-                        useCustomizationStore.getState().selectPart(part.partId);
+                        useCustomizationStore.getState().selectPart(part.id);
                         setActiveTab('color');
                       }}
-                      className={`bottombar-part-item ${selectedPartId === part.partId ? 'active' : ''}`}
+                      className={`bottombar-part-item ${selectedPartId === part.id ? 'active' : ''}`}
                     >
                       <div
                         className="bottombar-part-color"

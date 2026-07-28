@@ -104,14 +104,14 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
     // 保存当前状态到历史
     pushState(new Map(partConfigs));
     
-    const part = parts.find((p) => p.partId === partId);
+    const part = parts.find((p) => p.id === partId);
     
     if (part) {
       const newConfigs = new Map(partConfigs);
       newConfigs.set(partId, {
         partId,
         color: part.defaultColor,
-        materialType: part.defaultMaterial,
+        materialType: 'mesh', // 默认材质类型
         visible: true,
       });
       set({ partConfigs: newConfigs });
@@ -128,10 +128,10 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
     const newConfigs = new Map<PartId, PartConfig>();
     
     parts.forEach((part) => {
-      newConfigs.set(part.partId, {
-        partId: part.partId,
+      newConfigs.set(part.id, {
+        partId: part.id,
         color: part.defaultColor,
-        materialType: part.defaultMaterial,
+        materialType: 'mesh', // 默认材质类型
         visible: true,
       });
     });
@@ -145,10 +145,10 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
     const newConfigs = new Map<PartId, PartConfig>();
     
     parts.forEach((part) => {
-      newConfigs.set(part.partId, {
-        partId: part.partId,
+      newConfigs.set(part.id, {
+        partId: part.id,
         color: part.defaultColor,
-        materialType: part.defaultMaterial,
+        materialType: 'mesh', // 默认材质类型
         visible: true,
       });
     });
