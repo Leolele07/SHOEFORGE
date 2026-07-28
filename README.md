@@ -48,7 +48,7 @@
 
 ### 环境要求
 
-- Node.js >= 18.0.0
+- Node.js >= 18.0.0（下载地址：https://nodejs.org/）
 - npm >= 9.0.0
 
 ### 安装
@@ -74,6 +74,40 @@ npm run build
 # 预览生产版本
 npm run preview
 ```
+
+### 在新电脑上运行
+
+如果需要在其他电脑上运行 ShoeForge，请按以下步骤操作：
+
+**1. 环境准备：**
+- 安装 Node.js（>= 18.0.0）：https://nodejs.org/
+
+**2. 下载项目：**
+```bash
+git clone https://github.com/Leolele07/SHOEFORGE.git
+cd SHOEFORGE
+git checkout v1.0.6
+```
+
+**3. 安装依赖：**
+```bash
+npm install
+```
+
+**4. 启动项目：**
+```bash
+npm run dev
+```
+
+**5. 打开浏览器访问：**
+```
+http://localhost:5173/
+```
+
+**注意事项：**
+- 所有定制数据（颜色、材质、贴图）都保存在浏览器本地存储中，不会随项目迁移
+- 贴图文件是以 base64 格式存储在配置中的，导出的 JSON 方案会包含贴图数据
+- 如果需要保留之前的定制方案，可以在旧电脑上使用"导出方案"功能保存 JSON 文件，然后在新电脑上导入
 
 ---
 
