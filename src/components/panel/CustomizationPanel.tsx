@@ -136,6 +136,7 @@ export const CustomizationPanel: React.FC = () => {
         {activeTab === 'color' && (
           <ColorPicker
             currentColor={selectedConfig.color}
+            originalColor={selectedConfig.originalColor}
             onColorChange={(color) => updatePartColor(selectedPartId, color)}
             onReset={() => resetPart(selectedPartId)}
           />
@@ -143,6 +144,7 @@ export const CustomizationPanel: React.FC = () => {
         {activeTab === 'material' && (
           <MaterialPicker
             currentMaterial={selectedConfig.materialType}
+            originalMaterialType={selectedConfig.originalMaterialType}
             onMaterialChange={(type) => updatePartMaterial(selectedPartId, type)}
           />
         )}

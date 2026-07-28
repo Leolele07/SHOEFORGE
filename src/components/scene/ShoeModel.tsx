@@ -167,25 +167,9 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
         obj.castShadow = true;
         obj.receiveShadow = true;
         
-        // 克隆材质并设置为白色默认材质
+        // 克隆材质以支持独立颜色修改
         if (obj.material && obj.material instanceof THREE.Material) {
-          const oldMaterial = obj.material;
-          // 创建新的白色标准材质
-          const newMaterial = new THREE.MeshStandardMaterial({
-            color: new THREE.Color('#FFFFFF'),
-            roughness: 0.9,
-            metalness: 0.0,
-          });
-          
-          // 保留法线贴图等细节（如果有）
-          if (oldMaterial instanceof THREE.MeshStandardMaterial) {
-            if (oldMaterial.normalMap) {
-              newMaterial.normalMap = oldMaterial.normalMap;
-              newMaterial.normalScale = oldMaterial.normalScale.clone();
-            }
-          }
-          
-          obj.material = newMaterial;
+          obj.material = obj.material.clone();
         }
       }
       
@@ -208,8 +192,14 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
       // 尝试识别部件组
       const partGroup = identifyPartGroup(partId);
       
-      // 默认颜色为白色
-      const defaultColor = '#FFFFFF';
+      // 获取默认颜色（从第一个mesh）
+      let defaultColor = '#FFFFFF';
+      for (const mesh of meshes) {
+        if (mesh.material instanceof THREE.MeshStandardMaterial) {
+          defaultColor = '#' + mesh.material.color.getHexString();
+          break;
+        }
+      }
       
       parts.push({
         id: partId as PartId,
@@ -245,26 +235,18 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
         // 确保材质是MeshStandardMaterial
         if (!(mesh.material instanceof THREE.MeshStandardMaterial)) {
           // 如果不是，创建一个新的标准材质
-          const oldMaterial = mesh.material;
           mesh.material = new THREE.MeshStandardMaterial();
-          // 复制原材质的属性
-          if (oldMaterial instanceof THREE.Material) {
-            // 复制基本属性
-            if ('color' in oldMaterial) {
-              (mesh.material as THREE.MeshStandardMaterial).color = (oldMaterial as any).color;
-            }
-          }
         }
         
         const material = mesh.material as THREE.MeshStandardMaterial;
         
-        // 清除可能影响颜色的贴图
+        // 清除所有贴图（确保干净的状态）
         material.map = null;
         material.normalMap = null;
         material.roughnessMap = null;
         material.metalnessMap = null;
         
-        // 更新材质属性
+        // 更新材质属性（包括颜色）
         updateMaterialProperties(material, config.materialType, config.color);
         
         if (config.roughness !== undefined) {
@@ -274,7 +256,7 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
           material.metalness = config.metalness;
         }
         
-        // 应用贴图
+        // 应用贴图（如果有）
         if (config.textures && config.textures.length > 0) {
           for (const textureConfig of config.textures) {
             applyTextureToMaterial(material, textureConfig);

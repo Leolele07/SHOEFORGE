@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useUIStore } from '@/store/uiStore';
 import type { CameraPreset } from '@/types';
 
@@ -22,21 +22,53 @@ export const CameraPresets: React.FC = () => {
     }
   };
 
+  const handleScreenshot = useCallback(() => {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return;
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `shoe-design-${Date.now()}.png`;
+    a.click();
+  }, []);
+
   return (
-    <div className="camera-presets">
-      {presets.map((preset) => (
-        <button
-          key={preset.id}
-          onClick={() => handleClick(preset)}
-          className="camera-preset"
-          title={preset.label}
-        >
-          {preset.icon}
-          <span>{preset.label}</span>
-        </button>
-      ))}
+    <div className="camera-presets-container">
+      <div className="camera-presets">
+        {presets.map((preset) => (
+          <button
+            key={preset.id}
+            onClick={() => handleClick(preset)}
+            className="camera-preset"
+            title={preset.label}
+          >
+            {preset.icon}
+            <span>{preset.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* 截图按钮 */}
+      <button
+        onClick={handleScreenshot}
+        className="camera-screenshot-btn"
+        title="保存当前视角为图片"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+          <circle cx="12" cy="13" r="4" />
+        </svg>
+        <span>截图</span>
+      </button>
 
       <style>{`
+        .camera-presets-container {
+          display: flex;
+          gap: var(--sf-space-2);
+          align-items: center;
+        }
+
         .camera-presets {
           display: flex;
           gap: var(--sf-space-1);
@@ -81,12 +113,51 @@ export const CameraPresets: React.FC = () => {
           font-weight: var(--sf-font-medium);
         }
 
+        .camera-screenshot-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 2px;
+          padding: var(--sf-space-3) var(--sf-space-4);
+          background-color: var(--sf-color-primary);
+          color: var(--sf-text-inverse);
+          border: none;
+          border-radius: var(--sf-radius-lg);
+          box-shadow: var(--sf-shadow-lg);
+          cursor: pointer;
+          transition: all var(--sf-duration-fast) var(--sf-easing-default);
+          min-width: 60px;
+          white-space: nowrap;
+          user-select: none;
+        }
+
+        .camera-screenshot-btn:hover {
+          background-color: var(--sf-color-primary-hover);
+        }
+
+        .camera-screenshot-btn:active {
+          transform: scale(0.95);
+        }
+
+        .camera-screenshot-btn span {
+          font-size: 10px;
+          font-weight: var(--sf-font-medium);
+        }
+
         @media (max-width: 768px) {
           .camera-preset {
             padding: var(--sf-space-2);
             min-width: 44px;
           }
           .camera-preset span {
+            display: none;
+          }
+          .camera-screenshot-btn {
+            padding: var(--sf-space-2);
+            min-width: 44px;
+          }
+          .camera-screenshot-btn span {
             display: none;
           }
         }

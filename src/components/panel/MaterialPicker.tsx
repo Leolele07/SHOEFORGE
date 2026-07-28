@@ -4,6 +4,7 @@ import { MATERIAL_PRESETS, MATERIAL_NAMES, MATERIAL_DESCRIPTIONS } from '@/types
 
 interface MaterialPickerProps {
   currentMaterial: MaterialType;
+  originalMaterialType?: MaterialType;  // 原始材质类型
   onMaterialChange: (type: MaterialType) => void;
 }
 
@@ -11,11 +12,43 @@ const materialTypes: MaterialType[] = ['leather', 'mesh', 'suede', 'canvas', 'pa
 
 export const MaterialPicker: React.FC<MaterialPickerProps> = ({
   currentMaterial,
+  originalMaterialType,
   onMaterialChange,
 }) => {
   return (
     <div className="material-picker">
       <h4 className="material-section-title">材质类型</h4>
+
+      {/* 原料按钮 */}
+      {originalMaterialType && (
+        <div className="material-original">
+          <button
+            onClick={() => onMaterialChange(originalMaterialType)}
+            className={`material-item material-original-item ${currentMaterial === originalMaterialType ? 'selected' : ''}`}
+          >
+            {/* 材质预览球 */}
+            <div
+              className="material-preview"
+              style={{ background: getMaterialGradient(originalMaterialType) }}
+            />
+
+            {/* 材质信息 */}
+            <div className="material-info">
+              <span className="material-name">原料</span>
+              <span className="material-desc">恢复到原始材质</span>
+            </div>
+
+            {/* 选中指示 */}
+            {currentMaterial === originalMaterialType && (
+              <div className="material-check">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* 材质列表 */}
       <div className="material-list">

@@ -3,12 +3,14 @@ import { PRESET_COLORS } from '@/types';
 
 interface ColorPickerProps {
   currentColor: string;
+  originalColor?: string;  // 原始颜色
   onColorChange: (color: string) => void;
   onReset?: () => void;
 }
 
 export const ColorPicker: React.FC<ColorPickerProps> = ({
   currentColor,
+  originalColor,
   onColorChange,
   onReset,
 }) => {
@@ -18,6 +20,13 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   const handlePresetClick = (color: string) => {
     setCustomColor(color);
     onColorChange(color);
+  };
+
+  const handleOriginalColorClick = () => {
+    if (originalColor) {
+      setCustomColor(originalColor);
+      onColorChange(originalColor);
+    }
   };
 
   const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,6 +63,26 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
           </button>
         )}
       </div>
+
+      {/* 原色按钮 */}
+      {originalColor && (
+        <div className="color-original">
+          <h4 className="color-section-title">原色</h4>
+          <button
+            onClick={handleOriginalColorClick}
+            className={`color-original-btn ${currentColor === originalColor ? 'selected' : ''}`}
+            style={{ backgroundColor: originalColor }}
+            title={`原色: ${originalColor}`}
+          >
+            <span className="color-original-label">原色</span>
+            {currentColor === originalColor && (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* 预设颜色网格 */}
       <div className="color-presets">
@@ -186,6 +215,49 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
           font-size: var(--sf-text-sm);
           font-weight: var(--sf-font-semibold);
           color: var(--sf-text-secondary);
+        }
+
+        .color-original {
+          display: flex;
+          flex-direction: column;
+          gap: var(--sf-space-3);
+        }
+
+        .color-original-btn {
+          width: 100%;
+          height: 48px;
+          border-radius: var(--sf-radius-md);
+          border: 2px solid var(--sf-border-primary);
+          cursor: pointer;
+          transition: all var(--sf-duration-fast) var(--sf-easing-default);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: var(--sf-space-2);
+          color: white;
+          font-size: var(--sf-text-sm);
+          font-weight: var(--sf-font-medium);
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .color-original-btn:hover {
+          transform: scale(1.02);
+          border-color: var(--sf-text-primary);
+          box-shadow: var(--sf-shadow-md);
+        }
+
+        .color-original-btn.selected {
+          border-color: var(--sf-color-primary);
+          box-shadow: 0 0 0 2px var(--sf-color-primary);
+        }
+
+        .color-original-btn svg {
+          color: white;
+          filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+        }
+
+        .color-original-label {
+          font-size: var(--sf-text-xs);
         }
 
         .color-presets-grid {

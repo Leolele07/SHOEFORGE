@@ -55,6 +55,8 @@ export interface PartConfig {
   metalness?: number;       // 0-1
   visible: boolean;
   textures?: TextureConfig[];  // 贴图配置数组
+  originalColor?: string;   // 原始颜色
+  originalMaterialType?: MaterialType;  // 原始材质类型
 }
 
 // ── 完整方案 ──
