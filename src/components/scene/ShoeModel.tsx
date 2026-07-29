@@ -227,6 +227,9 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
 
     // 遍历所有部件配置
     partConfigs.forEach((config, partId) => {
+      // 只处理被用户修改过的部件
+      if (!config.isModified) return;
+      
       const meshes = partMeshMap.get(partId);
       if (!meshes) return;
       
@@ -235,7 +238,12 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
         // 确保材质是MeshStandardMaterial
         if (!(mesh.material instanceof THREE.MeshStandardMaterial)) {
           // 如果不是，创建一个新的标准材质
+          const oldMaterial = mesh.material;
           mesh.material = new THREE.MeshStandardMaterial();
+          // 复制原材质的颜色
+          if (oldMaterial instanceof THREE.Material && 'color' in oldMaterial) {
+            (mesh.material as THREE.MeshStandardMaterial).color = (oldMaterial as any).color;
+          }
         }
         
         const material = mesh.material as THREE.MeshStandardMaterial;
