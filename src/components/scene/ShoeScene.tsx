@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -11,10 +11,8 @@ import { EmptyState } from './EmptyState';
 import { CameraPresets } from './CameraPresets';
 import { CameraController } from './CameraController';
 import { Ground } from './Ground';
+import { ErrorBoundary } from '../ErrorBoundary';
 import type { PartInfo } from '@/types';
-
-const DEFAULT_MODEL_URL = '/models/shoe.gltf';
-const DEFAULT_MODEL_NAME = 'NIKE SPORTS RUNNING CLASSIC.gltf';
 
 // 存储鞋子边界信息，供CameraController使用
 let shoeBoundsInfo: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3; shoeRotation?: number } | null = null;
@@ -128,31 +126,21 @@ const ShoeModelWrapper: React.FC<ShoeModelWrapperProps> = ({ onShoeBounds }) => 
 };
 
 export const ShoeScene: React.FC = () => {
-  const { modelUrl, isLoading, loadError, setModelUrl, setModelMeta } = useModelStore();
-
-  useEffect(() => {
-    if (!modelUrl) {
-      setModelUrl(DEFAULT_MODEL_URL);
-      setModelMeta({
-        fileName: DEFAULT_MODEL_NAME,
-        meshCount: 0,
-        customizableParts: [],
-        boundingBox: { center: [0, 0, 0], size: [0, 0, 0] },
-      });
-    }
-  }, [modelUrl, setModelUrl, setModelMeta]);
+  const { modelUrl, isLoading, loadError } = useModelStore();
 
   return (
     <div className="scene-container">
       <div className="scene-canvas-wrapper">
-        <Canvas
-          camera={{ position: [3, 2.5, 3], fov: 45 }}
-          gl={{ preserveDrawingBuffer: true }}
-          dpr={[1, 2]}
-          shadows
-        >
-          <SceneContent />
-        </Canvas>
+        <ErrorBoundary>
+          <Canvas
+            camera={{ position: [3, 2.5, 3], fov: 45 }}
+            gl={{ preserveDrawingBuffer: true }}
+            dpr={[1, 2]}
+            shadows
+          >
+            <SceneContent />
+          </Canvas>
+        </ErrorBoundary>
 
         {isLoading && <LoadingOverlay />}
 

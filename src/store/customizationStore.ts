@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { PartId, PartConfig, MaterialType, PartInfo, DesignPreset, TextureConfig } from '@/types';
 import { useHistoryStore } from './historyStore';
+import { showToast } from '@/components/Toast';
 
 interface CustomizationState {
   selectedPartId: PartId | null;
@@ -297,7 +298,7 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
       set({ savedDesigns: newSavedDesigns });
     } catch (error) {
       console.error('保存设计失败:', error);
-      alert('保存设计失败，请重试');
+      showToast('保存设计失败，请重试', 'error');
     }
   },
 

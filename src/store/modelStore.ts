@@ -1,11 +1,13 @@
 import { create } from 'zustand';
-import type { ModelMetadata, ModelLoadError } from '@/types';
+import * as THREE from 'three';
+import type { ModelMetadata, ModelLoadError, PartId } from '@/types';
 
 interface ModelState {
   modelUrl: string | null;
   modelMeta: ModelMetadata | null;
   isLoading: boolean;
   loadError: ModelLoadError | null;
+  partMeshMap: Map<PartId, THREE.Mesh[]> | null;  // 部件Mesh映射
   
   loadModel: (file: File) => Promise<void>;
   loadModelFromUrl: (url: string, fileName: string) => void;
@@ -13,6 +15,7 @@ interface ModelState {
   setModelMeta: (meta: ModelMetadata | null) => void;
   setLoading: (loading: boolean) => void;
   setLoadError: (error: ModelLoadError | null) => void;
+  setPartMeshMap: (map: Map<PartId, THREE.Mesh[]> | null) => void;
   reset: () => void;
 }
 
@@ -21,6 +24,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
   modelMeta: null,
   isLoading: false,
   loadError: null,
+  partMeshMap: null,
 
   loadModel: async (file: File) => {
     const { setLoading, setLoadError, setModelUrl, setModelMeta } = get();
@@ -89,6 +93,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
   setModelMeta: (meta) => set({ modelMeta: meta }),
   setLoading: (loading) => set({ isLoading: loading }),
   setLoadError: (error) => set({ loadError: error }),
+  setPartMeshMap: (map) => set({ partMeshMap: map }),
   
   reset: () => {
     const { modelUrl } = get();
@@ -100,6 +105,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
       modelMeta: null,
       isLoading: false,
       loadError: null,
+      partMeshMap: null,
     });
   },
 }));

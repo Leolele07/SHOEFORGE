@@ -3,6 +3,7 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { PartId, PartConfig, PartInfo, PartGroup } from '@/types';
 import { updateMaterialProperties, applyTextureToMaterial } from '@/lib/materialPresets';
+import { useModelStore } from '@/store/modelStore';
 
 interface ShoeModelProps {
   url: string;
@@ -144,13 +145,13 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
     const parts: PartInfo[] = [];
 
     // 创建partId到mesh的映射
-    const partMeshMap = new Map<string, THREE.Mesh[]>();
+    const partMeshMap = new Map<PartId, THREE.Mesh[]>();
 
     // 递归遍历场景，找到所有mesh及其所属的部件组
     function traverseWithPartId(obj: THREE.Object3D, currentPartId: string | null) {
       if (obj instanceof THREE.Mesh) {
         // 确定partId：优先使用当前部件组ID，否则使用mesh名称
-        const partId = currentPartId || obj.name || 'unknown';
+        const partId = (currentPartId || obj.name || 'unknown') as PartId;
         
         // 将mesh添加到对应的部件组
         if (!partMeshMap.has(partId)) {
@@ -237,8 +238,8 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
       });
     });
     
-    // 将映射存储到全局变量，供后续使用
-    (window as any).partMeshMap = partMeshMap;
+    // 将映射存储到store，供后续使用
+    useModelStore.getState().setPartMeshMap(partMeshMap);
 
     if (onModelLoaded && parts.length > 0) {
       onModelLoaded(parts);
@@ -249,7 +250,7 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
   useEffect(() => {
     if (!scene || !partConfigs) return;
 
-    const partMeshMap = (window as any).partMeshMap as Map<string, THREE.Mesh[]>;
+    const partMeshMap = useModelStore.getState().partMeshMap;
     if (!partMeshMap) return;
 
     // 遍历所有部件配置
@@ -312,13 +313,14 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
           for (const textureConfig of config.textures) {
             applyTextureToMaterial(material, textureConfig);
           }
-        } else {
-          // 没有用户上传的贴图，清除所有贴图（一键白膜等情况）
+        } else if (config.color === '#FFFFFF') {
+          // 一键白膜：清除所有贴图
           material.map = null;
           material.normalMap = null;
           material.roughnessMap = null;
           material.metalnessMap = null;
         }
+        // 其他情况（修改颜色/材质）：保留原始贴图
         
         mesh.visible = config.visible;
       }

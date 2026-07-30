@@ -1,6 +1,7 @@
 import React, { useRef, useCallback, useState } from 'react';
 import { useModelStore } from '@/store/modelStore';
 import { useCustomizationStore } from '@/store/customizationStore';
+import { showToast } from '@/components/Toast';
 
 interface TopBarProps {
   onToggleSidebar?: () => void;
@@ -29,13 +30,13 @@ export const TopBar: React.FC<TopBarProps> = ({ onToggleSidebar }) => {
 
   const handleSaveDesign = useCallback(() => {
     if (!designName.trim()) {
-      alert('请输入设计名称');
+      showToast('请输入设计名称', 'error');
       return;
     }
     saveDesign(designName.trim());
     setDesignName('');
     setShowDesignMenu(false);
-    alert('设计已保存');
+    showToast('设计已保存', 'success');
   }, [designName, saveDesign]);
 
   const handleLoadDesign = useCallback((name: string) => {

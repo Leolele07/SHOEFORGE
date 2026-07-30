@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useModelStore } from '@/store/modelStore';
 import { useCustomizationStore } from '@/store/customizationStore';
+import { showToast } from '@/components/Toast';
 
 interface ModelInfo {
   name: string;
@@ -50,13 +51,13 @@ export const ModelSelector: React.FC = () => {
 
     // 验证文件类型
     if (!file.name.endsWith('.glb') && !file.name.endsWith('.gltf')) {
-      alert('请选择 .glb 或 .gltf 格式的文件');
+      showToast('请选择 .glb 或 .gltf 格式的文件', 'error');
       return;
     }
 
     // 验证文件大小（限制 50MB）
     if (file.size > 50 * 1024 * 1024) {
-      alert('文件过大，请选择小于 50MB 的模型');
+      showToast('文件过大，请选择小于 50MB 的模型', 'error');
       return;
     }
 

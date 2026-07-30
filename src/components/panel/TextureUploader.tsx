@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import type { TextureConfig, TextureTransform } from '@/types';
+import { showToast } from '@/components/Toast';
 
 interface TextureUploaderProps {
   onTextureAdd: (texture: TextureConfig) => void;
@@ -15,7 +16,7 @@ export const TextureUploader: React.FC<TextureUploaderProps> = ({ onTextureAdd }
 
     // 检查文件类型
     if (!file.type.startsWith('image/')) {
-      alert('请选择图片文件');
+      showToast('请选择图片文件', 'error');
       return;
     }
 

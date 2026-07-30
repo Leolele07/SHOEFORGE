@@ -2,11 +2,33 @@ import * as THREE from 'three';
 import type { MaterialType, PBRParams, TextureConfig, TextureTransform } from '@/types';
 import { MATERIAL_PRESETS } from '@/types';
 
-// 纹理缓存
+/**
+ * PBR材质工具库
+ * 
+ * 本模块提供Three.js PBR材质的创建、更新和贴图管理功能。
+ * 
+ * PBR参数说明：
+ * - roughness（粗糙度）：0-1，控制表面粗糙程度
+ *   - 0：完全光滑（如镜面）
+ *   - 1：完全粗糙（如磨砂表面）
+ * - metalness（金属度）：0-1，控制金属感
+ *   - 0：非金属（如塑料、木材）
+ *   - 1：纯金属（如钢铁、铝）
+ * - normalMap（法线贴图）：模拟表面凹凸细节，不改变几何形状
+ * - roughnessMap（粗糙度贴图）：控制不同区域的粗糙度
+ * - metalnessMap（金属度贴图）：控制不同区域的金属感
+ */
+
+/**
+ * 纹理缓存
+ * 用于缓存已加载的纹理，避免重复加载同一纹理
+ */
 const textureCache = new Map<string, THREE.Texture>();
 
 /**
  * 获取材质预设参数
+ * @param materialType - 材质类型（如皮革、网面、金属等）
+ * @returns PBR参数预设值
  */
 export function getMaterialPreset(materialType: MaterialType): PBRParams {
   return MATERIAL_PRESETS[materialType];
@@ -14,6 +36,9 @@ export function getMaterialPreset(materialType: MaterialType): PBRParams {
 
 /**
  * 创建PBR材质
+ * @param materialType - 材质类型
+ * @param color - 初始颜色（默认白色）
+ * @returns 新创建的MeshStandardMaterial实例
  */
 export function createPBRMaterial(
   materialType: MaterialType,
@@ -32,6 +57,12 @@ export function createPBRMaterial(
 
 /**
  * 更新材质属性
+ * 
+ * @param material - 要更新的材质
+ * @param materialType - 材质类型
+ * @param color - 颜色（可选）
+ * @param roughness - 粗糙度（可选，优先使用用户值）
+ * @param metalness - 金属度（可选，优先使用用户值）
  */
 export function updateMaterialProperties(
   material: THREE.MeshStandardMaterial,

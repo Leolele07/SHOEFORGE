@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { PRESET_COLORS } from '@/types';
 
 interface ColorPickerProps {
@@ -16,6 +16,17 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
 }) => {
   const [customColor, setCustomColor] = useState(currentColor);
   const [showCustom, setShowCustom] = useState(false);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 防抖函数
+  const debounceColorChange = useCallback((color: string) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      onColorChange(color);
+    }, 150);
+  }, [onColorChange]);
 
   const handlePresetClick = (color: string) => {
     setCustomColor(color);
@@ -32,7 +43,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const color = e.target.value;
     setCustomColor(color);
-    onColorChange(color);
+    debounceColorChange(color);
   };
 
   const handleHexInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +52,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     
     // 验证是否为有效的hex颜色
     if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
-      onColorChange(value);
+      debounceColorChange(value);
     }
   };
 
