@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -7,7 +7,6 @@ import { useCustomizationStore } from '@/store/customizationStore';
 import { useUIStore } from '@/store/uiStore';
 import { ShoeModel } from './ShoeModel';
 import { LoadingOverlay } from './LoadingOverlay';
-import { EmptyState } from './EmptyState';
 import { CameraPresets } from './CameraPresets';
 import { CameraController } from './CameraController';
 import { Ground } from './Ground';
@@ -126,7 +125,20 @@ const ShoeModelWrapper: React.FC<ShoeModelWrapperProps> = ({ onShoeBounds }) => 
 };
 
 export const ShoeScene: React.FC = () => {
-  const { modelUrl, isLoading, loadError } = useModelStore();
+  const { modelUrl, isLoading, loadError, setModelUrl, setModelMeta } = useModelStore();
+
+  // 设置默认模型
+  useEffect(() => {
+    if (!modelUrl) {
+      setModelUrl('/models/shoe.glb');
+      setModelMeta({
+        fileName: 'shoe.glb',
+        meshCount: 0,
+        customizableParts: [],
+        boundingBox: { center: [0, 0, 0], size: [0, 0, 0] },
+      });
+    }
+  }, [modelUrl, setModelUrl, setModelMeta]);
 
   return (
     <div className="scene-container">
@@ -165,8 +177,6 @@ export const ShoeScene: React.FC = () => {
             </div>
           </div>
         )}
-
-        {!modelUrl && !isLoading && !loadError && <EmptyState />}
       </div>
 
       {modelUrl && (
