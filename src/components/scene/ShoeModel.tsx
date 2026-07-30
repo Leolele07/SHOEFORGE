@@ -198,9 +198,16 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
       // 尝试识别部件组
       const partGroup = identifyPartGroup(partId);
       
-      // 获取默认颜色（从第一个mesh）
+      // 获取默认颜色（从原始材质）
       let defaultColor = '#FFFFFF';
       for (const mesh of meshes) {
+        // 优先从原始材质获取颜色
+        const originalMaterial = mesh.userData.originalMaterial;
+        if (originalMaterial instanceof THREE.MeshStandardMaterial) {
+          defaultColor = '#' + originalMaterial.color.getHexString();
+          break;
+        }
+        // 如果没有原始材质，从当前材质获取
         if (mesh.material instanceof THREE.MeshStandardMaterial) {
           defaultColor = '#' + mesh.material.color.getHexString();
           break;

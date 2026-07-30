@@ -125,7 +125,13 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
     const existing = newConfigs.get(partId);
     
     if (existing) {
-      newConfigs.set(partId, { ...existing, textures, isModified: true });
+      // 深拷贝textures数组，确保每个部件的贴图是独立的
+      const copiedTextures = textures.map(texture => ({
+        ...texture,
+        transform: { ...texture.transform },
+      }));
+      
+      newConfigs.set(partId, { ...existing, textures: copiedTextures, isModified: true });
       set({ partConfigs: newConfigs });
     }
   },
@@ -272,14 +278,27 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
     // 同时保存到localStorage
     const designsToSave: Record<string, any> = {};
     newSavedDesigns.forEach((value, key) => {
+      // 将Map转换为数组，确保可序列化
+      const configsArray: [PartId, PartConfig][] = [];
+      value.configs.forEach((config, partId) => {
+        // 深拷贝config，确保不包含不可序列化的对象
+        const configCopy = { ...config };
+        configsArray.push([partId, configCopy]);
+      });
+      
       designsToSave[key] = {
         name: value.name,
-        configs: Array.from(value.configs.entries()),
+        configs: configsArray,
       };
     });
-    localStorage.setItem('shoeForge_savedDesigns', JSON.stringify(designsToSave));
     
-    set({ savedDesigns: newSavedDesigns });
+    try {
+      localStorage.setItem('shoeForge_savedDesigns', JSON.stringify(designsToSave));
+      set({ savedDesigns: newSavedDesigns });
+    } catch (error) {
+      console.error('保存设计失败:', error);
+      alert('保存设计失败，请重试');
+    }
   },
 
   loadDesign: (name) => {

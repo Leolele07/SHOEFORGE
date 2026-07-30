@@ -75,7 +75,13 @@ export function applyTextureToMaterial(
   material: THREE.MeshStandardMaterial,
   textureConfig: TextureConfig
 ): void {
-  const texture = loadTexture(textureConfig.url);
+  // 不使用缓存，为每个部件创建独立的贴图
+  const loader = new THREE.TextureLoader();
+  const texture = loader.load(textureConfig.url);
+  
+  // 设置默认包装模式
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
   
   // 应用贴图变换
   applyTextureTransform(texture, textureConfig.transform);
@@ -124,29 +130,6 @@ export function removeTextureFromMaterial(
   }
   
   material.needsUpdate = true;
-}
-
-/**
- * 加载纹理
- */
-function loadTexture(url: string): THREE.Texture {
-  // 检查缓存
-  if (textureCache.has(url)) {
-    return textureCache.get(url)!;
-  }
-  
-  // 创建纹理加载器
-  const loader = new THREE.TextureLoader();
-  const texture = loader.load(url);
-  
-  // 设置默认包装模式
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  
-  // 缓存纹理
-  textureCache.set(url, texture);
-  
-  return texture;
 }
 
 /**
