@@ -36,7 +36,9 @@ export function createPBRMaterial(
 export function updateMaterialProperties(
   material: THREE.MeshStandardMaterial,
   materialType: MaterialType,
-  color?: string
+  color?: string,
+  roughness?: number,
+  metalness?: number
 ): void {
   const preset = getMaterialPreset(materialType);
   
@@ -45,9 +47,9 @@ export function updateMaterialProperties(
     material.color.set(color);
   }
   
-  // 设置PBR属性
-  material.roughness = preset.roughness;
-  material.metalness = preset.metalness;
+  // 设置PBR属性（优先使用用户提供的值，否则使用预设值）
+  material.roughness = roughness !== undefined ? roughness : preset.roughness;
+  material.metalness = metalness !== undefined ? metalness : preset.metalness;
   
   // 处理透明材质
   if (materialType === 'transparent') {

@@ -72,7 +72,7 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
     const existing = newConfigs.get(partId);
     
     if (existing) {
-      newConfigs.set(partId, { ...existing, color });
+      newConfigs.set(partId, { ...existing, color, isModified: true });
       set({ partConfigs: newConfigs });
     }
   },
@@ -88,7 +88,7 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
     const existing = newConfigs.get(partId);
     
     if (existing) {
-      newConfigs.set(partId, { ...existing, materialType });
+      newConfigs.set(partId, { ...existing, materialType, isModified: true });
       set({ partConfigs: newConfigs });
     }
   },
@@ -108,6 +108,7 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
         ...existing,
         ...(roughness !== undefined && { roughness }),
         ...(metalness !== undefined && { metalness }),
+        isModified: true,
       });
       set({ partConfigs: newConfigs });
     }
@@ -124,7 +125,7 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
     const existing = newConfigs.get(partId);
     
     if (existing) {
-      newConfigs.set(partId, { ...existing, textures });
+      newConfigs.set(partId, { ...existing, textures, isModified: true });
       set({ partConfigs: newConfigs });
     }
   },
@@ -201,6 +202,7 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
         textures: [],
         originalColor: part.defaultColor,
         originalMaterialType: 'mesh',
+        isModified: false,  // 初始化时标记为未修改
       });
     });
     
@@ -229,6 +231,7 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
         materialType: 'mesh',
         visible: true,
         textures: [],
+        isModified: true,  // 一键白膜标记为已修改
       });
     });
     
@@ -244,9 +247,14 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
     // 保存当前状态到历史
     pushState(new Map(partConfigs));
     
-    // 恢复到原始配置
+    // 恢复到原始配置，标记为未修改
+    const restoredConfigs = new Map<PartId, PartConfig>();
+    originalPartConfigs.forEach((config, partId) => {
+      restoredConfigs.set(partId, { ...config, isModified: false });
+    });
+    
     set({ 
-      partConfigs: new Map(originalPartConfigs), 
+      partConfigs: restoredConfigs, 
       selectedPartId: null 
     });
   },

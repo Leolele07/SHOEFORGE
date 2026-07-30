@@ -158,11 +158,17 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
         }
         partMeshMap.get(partId)!.push(obj);
         
+        // 保存原始材质引用（用于恢复原始）
+        const originalMaterial = obj.material instanceof THREE.MeshStandardMaterial 
+          ? obj.material.clone() 
+          : null;
+        
         // 设置userData
         obj.userData = {
           ...obj.userData,
           partId: partId,
           isShoePart: true,
+          originalMaterial: originalMaterial,  // 保存原始材质
         };
         obj.castShadow = true;
         obj.receiveShadow = true;
@@ -235,33 +241,44 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
         // 确保材质是MeshStandardMaterial
         if (!(mesh.material instanceof THREE.MeshStandardMaterial)) {
           // 如果不是，创建一个新的标准材质
+          const oldMaterial = mesh.material;
           mesh.material = new THREE.MeshStandardMaterial();
+          // 复制原材质的颜色
+          if (oldMaterial instanceof THREE.Material && 'color' in oldMaterial) {
+            (mesh.material as THREE.MeshStandardMaterial).color = (oldMaterial as any).color;
+          }
         }
         
         const material = mesh.material as THREE.MeshStandardMaterial;
         
-        // 清除所有贴图（确保干净的状态）
-        material.map = null;
-        material.normalMap = null;
-        material.roughnessMap = null;
-        material.metalnessMap = null;
+        // 如果未修改，恢复原始材质
+        if (!config.isModified) {
+          const originalMaterial = mesh.userData.originalMaterial;
+          if (originalMaterial instanceof THREE.MeshStandardMaterial) {
+            material.copy(originalMaterial);
+          }
+          mesh.visible = config.visible;
+          continue;
+        }
         
+        // 已修改的部件，应用用户配置
         // 更新材质属性（包括颜色）
-        updateMaterialProperties(material, config.materialType, config.color);
+        updateMaterialProperties(material, config.materialType, config.color, config.roughness, config.metalness);
         
-        if (config.roughness !== undefined) {
-          material.roughness = config.roughness;
-        }
-        if (config.metalness !== undefined) {
-          material.metalness = config.metalness;
-        }
-        
-        // 应用贴图（如果有）
+        // 应用贴图（如果有用户上传的贴图）
         if (config.textures && config.textures.length > 0) {
+          // 清除旧贴图
+          material.map = null;
+          material.normalMap = null;
+          material.roughnessMap = null;
+          material.metalnessMap = null;
+          
+          // 应用用户上传的贴图
           for (const textureConfig of config.textures) {
             applyTextureToMaterial(material, textureConfig);
           }
         }
+        // 如果没有用户上传的贴图，保留原始贴图
         
         mesh.visible = config.visible;
       }
