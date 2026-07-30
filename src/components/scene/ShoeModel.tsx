@@ -159,9 +159,23 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
         partMeshMap.get(partId)!.push(obj);
         
         // 保存原始材质引用（用于恢复原始）
-        const originalMaterial = obj.material instanceof THREE.MeshStandardMaterial 
-          ? obj.material.clone() 
-          : null;
+        let originalMaterial = null;
+        if (obj.material instanceof THREE.MeshStandardMaterial) {
+          originalMaterial = obj.material.clone();
+          // 深拷贝贴图，确保原始材质的贴图是独立的
+          if (obj.material.map) {
+            originalMaterial.map = obj.material.map.clone();
+          }
+          if (obj.material.normalMap) {
+            originalMaterial.normalMap = obj.material.normalMap.clone();
+          }
+          if (obj.material.roughnessMap) {
+            originalMaterial.roughnessMap = obj.material.roughnessMap.clone();
+          }
+          if (obj.material.metalnessMap) {
+            originalMaterial.metalnessMap = obj.material.metalnessMap.clone();
+          }
+        }
         
         // 设置userData
         obj.userData = {
@@ -262,7 +276,22 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
         if (!config.isModified) {
           const originalMaterial = mesh.userData.originalMaterial;
           if (originalMaterial instanceof THREE.MeshStandardMaterial) {
-            material.copy(originalMaterial);
+            // 恢复所有材质属性
+            material.color.copy(originalMaterial.color);
+            material.roughness = originalMaterial.roughness;
+            material.metalness = originalMaterial.metalness;
+            material.transparent = originalMaterial.transparent;
+            material.opacity = originalMaterial.opacity;
+            material.depthWrite = originalMaterial.depthWrite;
+            material.side = originalMaterial.side;
+            
+            // 恢复贴图
+            material.map = originalMaterial.map;
+            material.normalMap = originalMaterial.normalMap;
+            material.roughnessMap = originalMaterial.roughnessMap;
+            material.metalnessMap = originalMaterial.metalnessMap;
+            
+            material.needsUpdate = true;
           }
           mesh.visible = config.visible;
           continue;
@@ -272,20 +301,24 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
         // 更新材质属性（包括颜色）
         updateMaterialProperties(material, config.materialType, config.color, config.roughness, config.metalness);
         
-        // 应用贴图（如果有用户上传的贴图）
+        // 处理贴图
         if (config.textures && config.textures.length > 0) {
-          // 清除旧贴图
+          // 有用户上传的贴图，清除旧贴图并应用新贴图
           material.map = null;
           material.normalMap = null;
           material.roughnessMap = null;
           material.metalnessMap = null;
           
-          // 应用用户上传的贴图
           for (const textureConfig of config.textures) {
             applyTextureToMaterial(material, textureConfig);
           }
+        } else {
+          // 没有用户上传的贴图，清除所有贴图（一键白膜等情况）
+          material.map = null;
+          material.normalMap = null;
+          material.roughnessMap = null;
+          material.metalnessMap = null;
         }
-        // 如果没有用户上传的贴图，保留原始贴图
         
         mesh.visible = config.visible;
       }
