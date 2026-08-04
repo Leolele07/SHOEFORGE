@@ -131,10 +131,6 @@
   color: var(--sf-text-primary);
 }
 
-.part-item-visibility.hidden {
-  opacity: 0.5;
-}
-
 .part-item.selected .part-item-visibility {
   color: rgba(255, 255, 255, 0.7);
 }
