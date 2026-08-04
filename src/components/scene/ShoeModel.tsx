@@ -153,106 +153,142 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
     hasCentered.current = true;
   }, [scene, onShoeBounds]);
 
-  // 遍历场景，为每个mesh添加交互性
+  // 遍历场景，以犀牛图层（命名GROUP）为单位组织部件
   useEffect(() => {
     if (!scene) return;
 
     const parts: PartInfo[] = [];
-
-    // 创建partId到mesh的映射
     const partMeshMap = new Map<PartId, THREE.Mesh[]>();
 
-    // 递归遍历场景，找到所有mesh及其所属的部件组
-    function traverseWithPartId(obj: THREE.Object3D, currentPartId: string | null) {
-      if (obj instanceof THREE.Mesh) {
-        // 确定partId：优先使用当前部件组ID，否则使用mesh名称
-        const partId = (currentPartId || obj.name || 'unknown') as PartId;
-        
-        // 将mesh添加到对应的部件组
-        if (!partMeshMap.has(partId)) {
-          partMeshMap.set(partId, []);
+    // 跳过的容器节点名称（犀牛/Sketchfab导出时的包裹层）
+    const SKIP_NAMES = new Set([
+      'Sketchfab_model',
+      'Collada visual scene group',
+      'Scene',
+      'RootNode',
+      'defaultScene',
+    ]);
+
+    /**
+     * 查找犀牛图层根节点：
+     * 从根往下遍历，跳过已知容器名称和无名节点，
+     * 找到第一个包含多个命名子 GROUP 的节点作为图层根。
+     */
+    function findLayerRoot(obj: THREE.Object3D): THREE.Object3D {
+      // 如果当前节点名称在跳过列表中，或者是无名节点，递归到子节点
+      if ((SKIP_NAMES.has(obj.name) || !obj.name) && obj.children.length > 0) {
+        for (const child of obj.children) {
+          const result = findLayerRoot(child);
+          if (result !== child) return result;
         }
-        partMeshMap.get(partId)!.push(obj);
-        
-        // 保存原始材质引用（用于恢复原始）
-        let originalMaterial = null;
-        if (obj.material instanceof THREE.MeshStandardMaterial) {
-          originalMaterial = obj.material.clone();
-          // 深拷贝贴图，确保原始材质的贴图是独立的
-          if (obj.material.map) {
-            originalMaterial.map = obj.material.map.clone();
-          }
-          if (obj.material.normalMap) {
-            originalMaterial.normalMap = obj.material.normalMap.clone();
-          }
-          if (obj.material.roughnessMap) {
-            originalMaterial.roughnessMap = obj.material.roughnessMap.clone();
-          }
-          if (obj.material.metalnessMap) {
-            originalMaterial.metalnessMap = obj.material.metalnessMap.clone();
-          }
-        }
-        
-        // 设置userData
-        obj.userData = {
-          ...obj.userData,
-          partId: partId,
-          isShoePart: true,
-          originalMaterial: originalMaterial,  // 保存原始材质
-        };
-        obj.castShadow = true;
-        obj.receiveShadow = true;
-        
-        // 克隆材质以支持独立颜色修改
-        if (obj.material && obj.material instanceof THREE.Material) {
-          obj.material = obj.material.clone();
+        // 所有子节点都没找到更好的，继续往下找
+        if (obj.children.length === 1) {
+          return findLayerRoot(obj.children[0]);
         }
       }
-      
-      // 检查子节点是否是部件组（有名称且包含mesh的组）
+
+      // 检查当前节点的子节点中，有多少个是命名的 GROUP（不含 mesh 叶子节点）
+      const namedGroupChildren = obj.children.filter(
+        c => c.name && !SKIP_NAMES.has(c.name) && !(c instanceof THREE.Mesh)
+      );
+
+      // 如果有 2 个以上的命名子 GROUP，说明这就是图层根
+      if (namedGroupChildren.length >= 2) {
+        return obj;
+      }
+
+      // 否则继续往下找
       for (const child of obj.children) {
-        if (child.name && child.name !== 'Sketchfab_model' && child.name !== 'Collada visual scene group') {
-          // 这是一个部件组
-          traverseWithPartId(child, child.name);
-        } else {
-          // 继续使用当前的partId
-          traverseWithPartId(child, currentPartId);
+        if (!SKIP_NAMES.has(child.name) && !(child instanceof THREE.Mesh)) {
+          return findLayerRoot(child);
         }
+      }
+
+      return obj;
+    }
+
+    /**
+     * 递归收集某个节点下的所有 Mesh
+     */
+    function collectMeshes(obj: THREE.Object3D, meshes: THREE.Mesh[]) {
+      if (obj instanceof THREE.Mesh) {
+        meshes.push(obj);
+      }
+      for (const child of obj.children) {
+        collectMeshes(child, meshes);
       }
     }
-    
-    traverseWithPartId(scene, null);
-    
-    // 为每个部件组创建PartInfo
-    partMeshMap.forEach((meshes, partId) => {
-      // 尝试识别部件组
-      const partGroup = identifyPartGroup(partId);
-      
-      // 获取默认颜色（从原始材质）
+
+    const layerRoot = findLayerRoot(scene);
+
+    // 遍历图层根的直接子节点，每个子节点 = 一个犀牛图层 = 一个部件
+    for (const layerNode of layerRoot.children) {
+      // 收集该图层下所有 mesh
+      const meshes: THREE.Mesh[] = [];
+      collectMeshes(layerNode, meshes);
+
+      if (meshes.length === 0) continue;
+
+      // 使用图层节点名称作为部件名
+      const partName = layerNode.name || `Part_${parts.length}`;
+      const partId = partName as PartId;
+
+      // 保存映射
+      partMeshMap.set(partId, meshes);
+
+      // 为每个 mesh 设置交互信息和原始材质
+      for (const mesh of meshes) {
+        // 保存原始材质引用
+        let originalMaterial = null;
+        if (mesh.material instanceof THREE.MeshStandardMaterial) {
+          originalMaterial = mesh.material.clone();
+          if (mesh.material.map) originalMaterial.map = mesh.material.map.clone();
+          if (mesh.material.normalMap) originalMaterial.normalMap = mesh.material.normalMap.clone();
+          if (mesh.material.roughnessMap) originalMaterial.roughnessMap = mesh.material.roughnessMap.clone();
+          if (mesh.material.metalnessMap) originalMaterial.metalnessMap = mesh.material.metalnessMap.clone();
+        }
+
+        mesh.userData = {
+          ...mesh.userData,
+          partId,
+          isShoePart: true,
+          originalMaterial,
+        };
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+
+        // 克隆材质以支持独立颜色修改
+        if (mesh.material instanceof THREE.Material) {
+          mesh.material = mesh.material.clone();
+        }
+      }
+
+      // 获取默认颜色
       let defaultColor = '#FFFFFF';
       for (const mesh of meshes) {
-        // 优先从原始材质获取颜色
         const originalMaterial = mesh.userData.originalMaterial;
         if (originalMaterial instanceof THREE.MeshStandardMaterial) {
           defaultColor = '#' + originalMaterial.color.getHexString();
           break;
         }
-        // 如果没有原始材质，从当前材质获取
         if (mesh.material instanceof THREE.MeshStandardMaterial) {
           defaultColor = '#' + mesh.material.color.getHexString();
           break;
         }
       }
-      
+
+      // 识别部件分组
+      const partGroup = identifyPartGroup(partName);
+
       parts.push({
-        id: partId as PartId,
-        name: partGroup?.name || partId,
-        group: partGroup?.group || 'accessory',
+        id: partId,
+        name: partGroup?.name || partName,
+        group: partGroup?.group || 'other',
         defaultColor,
         meshes,
       });
-    });
-    
+    }
+
     // 将映射存储到store，供后续使用
     useModelStore.getState().setPartMeshMap(partMeshMap);
 
@@ -387,28 +423,44 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
 
 function identifyPartGroup(name: string): { name: string; group: PartGroup } | null {
   const partKeywords: Record<string, { name: string; group: PartGroup }> = {
+    // ── 犀牛图层名（英文）→ 中文名 + 分组 ──
+    'Midsole': { name: '中底', group: 'midsole' },
+    'Outsole': { name: '外底', group: 'outsole' },
+    'Upper': { name: '鞋面', group: 'upper' },
+    'Lining': { name: '内衬', group: 'lining' },
+    'Heel_TPU': { name: '后跟TPU', group: 'heel' },
+    'Heel': { name: '后跟', group: 'heel' },
+    'Tongue_Inner': { name: '鞋舌内', group: 'tongue' },
+    'Tongue_Outer': { name: '鞋舌外', group: 'tongue' },
+    'Tongue': { name: '鞋舌', group: 'tongue' },
+    'Lace_Edge': { name: '鞋带边', group: 'lace' },
+    'Lace_Outer': { name: '鞋带外', group: 'lace' },
+    'Lace': { name: '鞋带', group: 'lace' },
+    'Eyelet': { name: '鞋眼', group: 'lace' },
+    'Metal_Cap': { name: '金属帽', group: 'accessory' },
+    'LOGO_outside': { name: 'LOGO外', group: 'swoosh' },
+    'LOGO_inside': { name: 'LOGO内', group: 'swoosh' },
+    'Swoosh': { name: '标志', group: 'swoosh' },
+    'Logo': { name: '标志', group: 'swoosh' },
+    // ── 中文名（兼容中文命名的犀牛文件）──
     '中底': { name: '中底', group: 'midsole' },
-    '鞋带边': { name: '鞋带边', group: 'lace' },
-    '鞋眼片': { name: '鞋眼片', group: 'lace' },
+    '外底': { name: '外底', group: 'outsole' },
     '鞋面': { name: '鞋面', group: 'upper' },
+    '内衬': { name: '内衬', group: 'lining' },
+    '内里': { name: '内衬', group: 'lining' },
+    '后跟': { name: '后跟', group: 'heel' },
+    '鞋舌': { name: '鞋舌', group: 'tongue' },
+    '鞋带': { name: '鞋带', group: 'lace' },
+    '鞋带边': { name: '鞋带边', group: 'lace' },
+    '鞋带外': { name: '鞋带外', group: 'lace' },
+    '鞋眼片': { name: '鞋眼', group: 'lace' },
     '金属帽': { name: '金属帽', group: 'accessory' },
-    '内里': { name: '内里', group: 'lining' },
-    '橡胶鞋底': { name: '橡胶鞋底', group: 'outsole' },
     'LOGO外': { name: 'LOGO外', group: 'swoosh' },
     'LOGO内': { name: 'LOGO内', group: 'swoosh' },
-    '鞋带外': { name: '鞋带外', group: 'lace' },
+    '橡胶鞋底': { name: '外底', group: 'outsole' },
     '后跟TPU': { name: '后跟TPU', group: 'heel' },
     '鞋舌内': { name: '鞋舌内', group: 'tongue' },
     '鞋舌外': { name: '鞋舌外', group: 'tongue' },
-    'Upper': { name: '鞋面', group: 'upper' },
-    'Midsole': { name: '中底', group: 'midsole' },
-    'Outsole': { name: '外底', group: 'outsole' },
-    'Tongue': { name: '鞋舌', group: 'tongue' },
-    'Lace': { name: '鞋带', group: 'lace' },
-    'Lining': { name: '内衬', group: 'lining' },
-    'Heel': { name: '后跟', group: 'heel' },
-    'Swoosh': { name: '标志', group: 'swoosh' },
-    'Logo': { name: '标志', group: 'swoosh' },
   };
 
   // 直接匹配
