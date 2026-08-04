@@ -124,9 +124,9 @@ export const ShoeScene: React.FC = () => {
   // 设置默认模型
   useEffect(() => {
     if (!modelUrl) {
-      setModelUrl('/models/shoe.glb');
+      setModelUrl('/models/NIKE_SPORTS_SHOE_BLACK.glb');
       setModelMeta({
-        fileName: 'shoe.glb',
+        fileName: 'NIKE_SPORTS_SHOE_BLACK.glb',
         meshCount: 0,
         customizableParts: [],
         boundingBox: { center: [0, 0, 0], size: [0, 0, 0] },
