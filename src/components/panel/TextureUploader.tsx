@@ -6,6 +6,9 @@ interface TextureUploaderProps {
   onTextureAdd: (texture: TextureConfig) => void;
 }
 
+/** 贴图文件最大 5MB */
+const MAX_TEXTURE_SIZE = 5 * 1024 * 1024;
+
 export const TextureUploader: React.FC<TextureUploaderProps> = ({ onTextureAdd }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [textureType, setTextureType] = useState<TextureConfig['type']>('color');
@@ -20,11 +23,21 @@ export const TextureUploader: React.FC<TextureUploaderProps> = ({ onTextureAdd }
       return;
     }
 
+    // 检查文件大小
+    if (file.size > MAX_TEXTURE_SIZE) {
+      showToast(`贴图文件过大，最大 ${MAX_TEXTURE_SIZE / 1024 / 1024}MB`, 'error');
+      return;
+    }
+
     // 读取文件为base64
     const reader = new FileReader();
     reader.onload = (event) => {
       const url = event.target?.result as string;
-      
+      if (!url) {
+        showToast('贴图文件读取失败', 'error');
+        return;
+      }
+
       // 创建默认变换
       const defaultTransform: TextureTransform = {
         offsetX: 0,
@@ -42,6 +55,9 @@ export const TextureUploader: React.FC<TextureUploaderProps> = ({ onTextureAdd }
       };
 
       onTextureAdd(textureConfig);
+    };
+    reader.onerror = () => {
+      showToast('贴图文件读取失败', 'error');
     };
     reader.readAsDataURL(file);
 

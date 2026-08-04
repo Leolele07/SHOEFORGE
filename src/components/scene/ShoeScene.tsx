@@ -13,11 +13,6 @@ import { Ground } from './Ground';
 import { ErrorBoundary } from '../ErrorBoundary';
 import type { PartInfo } from '@/types';
 
-// 存储鞋子边界信息，供CameraController使用
-let shoeBoundsInfo: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3; shoeRotation?: number } | null = null;
-
-export const getShoeBoundsInfo = () => shoeBoundsInfo;
-
 const SceneContent: React.FC = () => {
   const presetCamera = useUIStore((s) => s.presetCamera);
   const controlsRef = useRef<any>(null);
@@ -30,7 +25,6 @@ const SceneContent: React.FC = () => {
   const handleShoeBounds = useCallback((bounds: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3 }) => {
     const newCenter: [number, number, number] = [bounds.center.x, bounds.center.y, bounds.center.z];
     setShoeCenter(newCenter);
-    shoeBoundsInfo = bounds;
 
     // 立即更新OrbitControls的target为鞋子中心
     if (controlsRef.current) {

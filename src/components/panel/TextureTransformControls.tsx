@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import type { TextureConfig, TextureTransform } from '@/types';
 
 interface TextureTransformControlsProps {
@@ -7,17 +7,57 @@ interface TextureTransformControlsProps {
   onRemove: () => void;
 }
 
+/** 节流延迟（ms）— 滑块拖动时最多每 N ms 更新一次 store */
+const SLIDER_THROTTLE_MS = 50;
+
 export const TextureTransformControls: React.FC<TextureTransformControlsProps> = ({
   texture,
   onUpdate,
   onRemove,
 }) => {
-  const handleTransformChange = (key: keyof TextureTransform, value: number) => {
-    onUpdate({
-      ...texture.transform,
-      [key]: value,
-    });
-  };
+  // 本地状态用于即时 UI 反馈，避免每帧都写 store
+  const [localTransform, setLocalTransform] = useState<TextureTransform>(texture.transform);
+  const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isDragging = useRef(false);
+
+  // 当外部 texture.transform 变化时（如 undo/redo），同步到本地
+  useEffect(() => {
+    if (!isDragging.current) {
+      setLocalTransform(texture.transform);
+    }
+  }, [texture.transform]);
+
+  const handleTransformChange = useCallback((key: keyof TextureTransform, value: number) => {
+    const newTransform = { ...localTransform, [key]: value };
+    setLocalTransform(newTransform);
+    isDragging.current = true;
+
+    // 节流：拖动期间定期同步到 store
+    if (throttleTimerRef.current) return;
+    throttleTimerRef.current = setTimeout(() => {
+      onUpdate(newTransform);
+      throttleTimerRef.current = null;
+    }, SLIDER_THROTTLE_MS);
+  }, [localTransform, onUpdate]);
+
+  // 鼠标/触摸松开时确保最终值同步到 store
+  const handleSliderCommit = useCallback(() => {
+    isDragging.current = false;
+    if (throttleTimerRef.current) {
+      clearTimeout(throttleTimerRef.current);
+      throttleTimerRef.current = null;
+    }
+    onUpdate(localTransform);
+  }, [localTransform, onUpdate]);
+
+  // 卸载时清理
+  useEffect(() => {
+    return () => {
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="texture-transform-controls">
@@ -46,11 +86,13 @@ export const TextureTransformControls: React.FC<TextureTransformControlsProps> =
             min="-1"
             max="1"
             step="0.01"
-            value={texture.transform.offsetX}
+            value={localTransform.offsetX}
             onChange={(e) => handleTransformChange('offsetX', parseFloat(e.target.value))}
+            onMouseUp={handleSliderCommit}
+            onTouchEnd={handleSliderCommit}
             className="transform-slider"
           />
-          <span className="transform-value">{texture.transform.offsetX.toFixed(2)}</span>
+          <span className="transform-value">{localTransform.offsetX.toFixed(2)}</span>
         </div>
 
         {/* Y偏移 */}
@@ -61,11 +103,13 @@ export const TextureTransformControls: React.FC<TextureTransformControlsProps> =
             min="-1"
             max="1"
             step="0.01"
-            value={texture.transform.offsetY}
+            value={localTransform.offsetY}
             onChange={(e) => handleTransformChange('offsetY', parseFloat(e.target.value))}
+            onMouseUp={handleSliderCommit}
+            onTouchEnd={handleSliderCommit}
             className="transform-slider"
           />
-          <span className="transform-value">{texture.transform.offsetY.toFixed(2)}</span>
+          <span className="transform-value">{localTransform.offsetY.toFixed(2)}</span>
         </div>
 
         {/* X缩放 */}
@@ -76,11 +120,13 @@ export const TextureTransformControls: React.FC<TextureTransformControlsProps> =
             min="0.1"
             max="10"
             step="0.1"
-            value={texture.transform.scaleX}
+            value={localTransform.scaleX}
             onChange={(e) => handleTransformChange('scaleX', parseFloat(e.target.value))}
+            onMouseUp={handleSliderCommit}
+            onTouchEnd={handleSliderCommit}
             className="transform-slider"
           />
-          <span className="transform-value">{texture.transform.scaleX.toFixed(1)}</span>
+          <span className="transform-value">{localTransform.scaleX.toFixed(1)}</span>
         </div>
 
         {/* Y缩放 */}
@@ -91,11 +137,13 @@ export const TextureTransformControls: React.FC<TextureTransformControlsProps> =
             min="0.1"
             max="10"
             step="0.1"
-            value={texture.transform.scaleY}
+            value={localTransform.scaleY}
             onChange={(e) => handleTransformChange('scaleY', parseFloat(e.target.value))}
+            onMouseUp={handleSliderCommit}
+            onTouchEnd={handleSliderCommit}
             className="transform-slider"
           />
-          <span className="transform-value">{texture.transform.scaleY.toFixed(1)}</span>
+          <span className="transform-value">{localTransform.scaleY.toFixed(1)}</span>
         </div>
 
         {/* 旋转 */}
@@ -106,11 +154,13 @@ export const TextureTransformControls: React.FC<TextureTransformControlsProps> =
             min="0"
             max="360"
             step="1"
-            value={texture.transform.rotation}
+            value={localTransform.rotation}
             onChange={(e) => handleTransformChange('rotation', parseFloat(e.target.value))}
+            onMouseUp={handleSliderCommit}
+            onTouchEnd={handleSliderCommit}
             className="transform-slider"
           />
-          <span className="transform-value">{texture.transform.rotation.toFixed(0)}°</span>
+          <span className="transform-value">{localTransform.rotation.toFixed(0)}°</span>
         </div>
       </div>
 
