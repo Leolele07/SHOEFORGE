@@ -1,7 +1,27 @@
 import React, { useState } from 'react';
 import { useCustomizationStore } from '@/store/customizationStore';
+import { PRESET_COLORS, MATERIAL_NAMES } from '@/types';
+import type { MaterialType } from '@/types';
+import '@/styles/bottom-bar.css';
 
 type BottomTabType = 'parts' | 'color' | 'material' | 'actions';
+
+/** 材质渐变预览映射 */
+const MATERIAL_GRADIENTS: Record<string, string> = {
+  leather: 'linear-gradient(135deg, #8B4513 0%, #A0522D 50%, #6B3410 100%)',
+  mesh: 'linear-gradient(135deg, #E0E0E0 0%, #BDBDBD 50%, #9E9E9E 100%)',
+  suede: 'linear-gradient(135deg, #D2B48C 0%, #C4A882 50%, #B89B7A 100%)',
+  canvas: 'linear-gradient(135deg, #F5F5DC 0%, #EED9B6 50%, #D4C5A0 100%)',
+  patent: 'linear-gradient(135deg, #1A1A1A 0%, #333333 50%, #0D0D0D 100%)',
+  metallic: 'linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 50%, #D4D4D4 100%)',
+  plastic: 'linear-gradient(135deg, #2196F3 0%, #1976D2 50%, #0D47A1 100%)',
+  rubber: 'linear-gradient(135deg, #333333 0%, #444444 50%, #222222 100%)',
+  fabric: 'linear-gradient(135deg, #8D6E63 0%, #795548 50%, #6D4C41 100%)',
+  carbon: 'linear-gradient(135deg, #212121 0%, #37474F 50%, #1B1B1B 100%)',
+  transparent: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(200,200,200,0.3) 50%, rgba(255,255,255,0.1) 100%)',
+};
+
+const MATERIAL_TYPES = Object.keys(MATERIAL_NAMES) as MaterialType[];
 
 export const BottomBar: React.FC = () => {
   const { selectedPartId, parts, partConfigs } = useCustomizationStore();
@@ -9,6 +29,7 @@ export const BottomBar: React.FC = () => {
   const [showPanel, setShowPanel] = useState(false);
 
   const selectedPart = parts.find((p) => p.id === selectedPartId);
+  const selectedConfig = selectedPartId ? partConfigs.get(selectedPartId) : undefined;
 
   const handleTabClick = (tab: BottomTabType) => {
     if (activeTab === tab && showPanel) {
@@ -29,7 +50,9 @@ export const BottomBar: React.FC = () => {
     const a = document.createElement('a');
     a.href = url;
     a.download = `shoe-design-${Date.now()}.json`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
@@ -41,7 +64,19 @@ export const BottomBar: React.FC = () => {
     const a = document.createElement('a');
     a.href = dataUrl;
     a.download = `shoe-screenshot-${Date.now()}.png`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleColorSelect = (color: string) => {
+    if (!selectedPartId) return;
+    useCustomizationStore.getState().updatePartColor(selectedPartId, color);
+  };
+
+  const handleMaterialSelect = (materialType: MaterialType) => {
+    if (!selectedPartId) return;
+    useCustomizationStore.getState().updatePartMaterial(selectedPartId, materialType);
   };
 
   return (
@@ -52,8 +87,8 @@ export const BottomBar: React.FC = () => {
           <div className="bottombar-panel-header">
             <span className="bottombar-panel-title">
               {activeTab === 'parts' && '选择部件'}
-              {activeTab === 'color' && '选择颜色'}
-              {activeTab === 'material' && '选择材质'}
+              {activeTab === 'color' && (selectedPart ? `${selectedPart.name} - 选择颜色` : '选择颜色')}
+              {activeTab === 'material' && (selectedPart ? `${selectedPart.name} - 选择材质` : '选择材质')}
               {activeTab === 'actions' && '操作'}
             </span>
             <button
@@ -66,6 +101,7 @@ export const BottomBar: React.FC = () => {
             </button>
           </div>
           <div className="bottombar-panel-content">
+            {/* 部件列表 */}
             {activeTab === 'parts' && (
               <div className="bottombar-parts-list">
                 {parts.map((part) => {
@@ -90,17 +126,48 @@ export const BottomBar: React.FC = () => {
                 })}
               </div>
             )}
-            {activeTab === 'color' && selectedPart && (
-              <div className="bottombar-colors">
-                {/* 简化的颜色选择 */}
-                <p className="text-sm text-secondary">选择颜色功能</p>
+
+            {/* 颜色选择 */}
+            {activeTab === 'color' && selectedPart && selectedConfig && (
+              <div className="bottombar-color-grid">
+                {PRESET_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => handleColorSelect(color)}
+                    className={`bottombar-color-swatch ${selectedConfig.color === color ? 'selected' : ''}`}
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  >
+                    {selectedConfig.color === color && (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
               </div>
             )}
-            {activeTab === 'material' && selectedPart && (
-              <div className="bottombar-materials">
-                <p className="text-sm text-secondary">选择材质功能</p>
+
+            {/* 材质选择 */}
+            {activeTab === 'material' && selectedPart && selectedConfig && (
+              <div className="bottombar-material-list">
+                {MATERIAL_TYPES.map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => handleMaterialSelect(type)}
+                    className={`bottombar-material-item ${selectedConfig.materialType === type ? 'active' : ''}`}
+                  >
+                    <div
+                      className="bottombar-material-gradient"
+                      style={{ background: MATERIAL_GRADIENTS[type] || '#ccc' }}
+                    />
+                    <span className="bottombar-material-name">{MATERIAL_NAMES[type]}</span>
+                  </button>
+                ))}
               </div>
             )}
+
+            {/* 操作 */}
             {activeTab === 'actions' && (
               <div className="bottombar-actions-grid">
                 <button onClick={handleScreenshot} className="bottombar-action-item">
@@ -186,165 +253,6 @@ export const BottomBar: React.FC = () => {
           <span>更多</span>
         </button>
       </div>
-
-      <style>{`
-        .bottombar {
-          display: none;
-        }
-
-        @media (max-width: 768px) {
-          .bottombar {
-            display: flex;
-            flex-direction: column;
-            background-color: var(--sf-bg-primary);
-            border-top: 1px solid var(--sf-border-primary);
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: var(--sf-z-sticky);
-          }
-
-          .bottombar-panel {
-            background-color: var(--sf-bg-primary);
-            border-top: 1px solid var(--sf-border-primary);
-            max-height: 50vh;
-            overflow-y: auto;
-            animation: slideUp var(--sf-duration-normal) var(--sf-easing-out);
-          }
-
-          .bottombar-panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: var(--sf-space-3) var(--sf-space-4);
-            border-bottom: 1px solid var(--sf-border-secondary);
-          }
-
-          .bottombar-panel-title {
-            font-size: var(--sf-text-sm);
-            font-weight: var(--sf-font-medium);
-            color: var(--sf-text-primary);
-          }
-
-          .bottombar-panel-content {
-            padding: var(--sf-space-4);
-          }
-
-          .bottombar-parts-list {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: var(--sf-space-2);
-          }
-
-          .bottombar-part-item {
-            display: flex;
-            align-items: center;
-            gap: var(--sf-space-2);
-            padding: var(--sf-space-3);
-            border: 1px solid var(--sf-border-primary);
-            border-radius: var(--sf-radius-md);
-            background: none;
-            cursor: pointer;
-            transition: all var(--sf-duration-fast) var(--sf-easing-default);
-          }
-
-          .bottombar-part-item:hover {
-            border-color: var(--sf-text-primary);
-          }
-
-          .bottombar-part-item.active {
-            border-color: var(--sf-color-primary);
-            background-color: var(--sf-bg-secondary);
-          }
-
-          .bottombar-part-color {
-            width: 24px;
-            height: 24px;
-            border-radius: var(--sf-radius-sm);
-            border: 1px solid var(--sf-border-primary);
-          }
-
-          .bottombar-part-name {
-            font-size: var(--sf-text-sm);
-            color: var(--sf-text-primary);
-          }
-
-          .bottombar-actions-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: var(--sf-space-3);
-          }
-
-          .bottombar-action-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: var(--sf-space-2);
-            padding: var(--sf-space-3);
-            border: none;
-            background: none;
-            border-radius: var(--sf-radius-md);
-            cursor: pointer;
-            color: var(--sf-text-primary);
-            transition: background-color var(--sf-duration-fast) var(--sf-easing-default);
-          }
-
-          .bottombar-action-item:hover {
-            background-color: var(--sf-bg-secondary);
-          }
-
-          .bottombar-action-item span {
-            font-size: var(--sf-text-xs);
-          }
-
-          .bottombar-nav {
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            height: var(--sf-bottombar-height);
-            padding: 0 var(--sf-space-2);
-          }
-
-          .bottombar-tab {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            padding: var(--sf-space-2);
-            border: none;
-            background: none;
-            border-radius: var(--sf-radius-md);
-            cursor: pointer;
-            color: var(--sf-text-secondary);
-            transition: color var(--sf-duration-fast) var(--sf-easing-default);
-            min-width: 64px;
-          }
-
-          .bottombar-tab:hover:not(:disabled) {
-            color: var(--sf-text-primary);
-          }
-
-          .bottombar-tab.active {
-            color: var(--sf-color-primary);
-          }
-
-          .bottombar-tab:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-          }
-
-          .bottombar-tab span {
-            font-size: 10px;
-            font-weight: var(--sf-font-medium);
-          }
-
-          @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-          }
-        }
-      `}</style>
     </div>
   );
 };

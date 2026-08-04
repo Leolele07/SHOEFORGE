@@ -5,6 +5,21 @@ import type { PartId, PartConfig, PartInfo, PartGroup } from '@/types';
 import { updateMaterialProperties, applyTextureToMaterial } from '@/lib/materialPresets';
 import { useModelStore } from '@/store/modelStore';
 
+/** 比较两个 PartConfig 是否相同（浅比较关键字段） */
+function configsEqual(a: PartConfig | undefined, b: PartConfig | undefined): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.color === b.color &&
+    a.materialType === b.materialType &&
+    a.roughness === b.roughness &&
+    a.metalness === b.metalness &&
+    a.visible === b.visible &&
+    a.isModified === b.isModified &&
+    a.textures === b.textures // 引用比较，store 中已保证每次变更产生新引用
+  );
+}
+
 interface ShoeModelProps {
   url: string;
   selectedPartId: PartId | null;
@@ -246,38 +261,45 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
     }
   }, [scene, onModelLoaded]);
 
-  // 应用材质配置
+  // 上一次的配置快照，用于增量比较
+  const prevConfigsRef = useRef<Map<PartId, PartConfig>>(new Map());
+
+  // 应用材质配置（增量更新：只处理实际变化的部件）
   useEffect(() => {
     if (!scene || !partConfigs) return;
 
     const partMeshMap = useModelStore.getState().partMeshMap;
     if (!partMeshMap) return;
 
-    // 遍历所有部件配置
+    const prevConfigs = prevConfigsRef.current;
+
+    // 遍历所有部件配置，找出变化的
     partConfigs.forEach((config, partId) => {
+      const prevConfig = prevConfigs.get(partId);
+
+      // 跳过未变化的部件
+      if (configsEqual(prevConfig, config)) return;
+
       const meshes = partMeshMap.get(partId);
       if (!meshes) return;
-      
+
       // 为该部件的所有mesh应用配置
       for (const mesh of meshes) {
         // 确保材质是MeshStandardMaterial
         if (!(mesh.material instanceof THREE.MeshStandardMaterial)) {
-          // 如果不是，创建一个新的标准材质
           const oldMaterial = mesh.material;
           mesh.material = new THREE.MeshStandardMaterial();
-          // 复制原材质的颜色
           if (oldMaterial instanceof THREE.Material && 'color' in oldMaterial) {
             (mesh.material as THREE.MeshStandardMaterial).color = (oldMaterial as any).color;
           }
         }
-        
+
         const material = mesh.material as THREE.MeshStandardMaterial;
-        
+
         // 如果未修改，恢复原始材质
         if (!config.isModified) {
           const originalMaterial = mesh.userData.originalMaterial;
           if (originalMaterial instanceof THREE.MeshStandardMaterial) {
-            // 恢复所有材质属性
             material.color.copy(originalMaterial.color);
             material.roughness = originalMaterial.roughness;
             material.metalness = originalMaterial.metalness;
@@ -285,46 +307,44 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
             material.opacity = originalMaterial.opacity;
             material.depthWrite = originalMaterial.depthWrite;
             material.side = originalMaterial.side;
-            
-            // 恢复贴图
+
             material.map = originalMaterial.map;
             material.normalMap = originalMaterial.normalMap;
             material.roughnessMap = originalMaterial.roughnessMap;
             material.metalnessMap = originalMaterial.metalnessMap;
-            
+
             material.needsUpdate = true;
           }
           mesh.visible = config.visible;
           continue;
         }
-        
+
         // 已修改的部件，应用用户配置
-        // 更新材质属性（包括颜色）
         updateMaterialProperties(material, config.materialType, config.color, config.roughness, config.metalness);
-        
+
         // 处理贴图
         if (config.textures && config.textures.length > 0) {
-          // 有用户上传的贴图，清除旧贴图并应用新贴图
           material.map = null;
           material.normalMap = null;
           material.roughnessMap = null;
           material.metalnessMap = null;
-          
+
           for (const textureConfig of config.textures) {
             applyTextureToMaterial(material, textureConfig);
           }
         } else if (config.color === '#FFFFFF') {
-          // 一键白膜：清除所有贴图
           material.map = null;
           material.normalMap = null;
           material.roughnessMap = null;
           material.metalnessMap = null;
         }
-        // 其他情况（修改颜色/材质）：保留原始贴图
-        
+
         mesh.visible = config.visible;
       }
     });
+
+    // 更新快照
+    prevConfigsRef.current = new Map(partConfigs);
   }, [scene, partConfigs]);
 
   const handleClick = (event: any) => {

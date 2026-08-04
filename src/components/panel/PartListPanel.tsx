@@ -1,19 +1,22 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useCustomizationStore } from '@/store/customizationStore';
-import { PART_GROUP_NAMES } from '@/types';
+import { PART_GROUP_NAMES, MATERIAL_NAMES } from '@/types';
 import type { PartGroup } from '@/types';
+import '@/styles/part-list.css';
 
 export const PartListPanel: React.FC = () => {
   const { parts, partConfigs, selectedPartId, selectPart, togglePartVisibility } = useCustomizationStore();
 
-  // 按分组组织部件
-  const groupedParts = parts.reduce((acc, part) => {
-    if (!acc[part.group]) {
-      acc[part.group] = [];
-    }
-    acc[part.group].push(part);
-    return acc;
-  }, {} as Record<PartGroup, typeof parts>);
+  // 按分组组织部件（使用 useMemo 避免每次渲染重新计算）
+  const groupedParts = useMemo(() => {
+    return parts.reduce((acc, part) => {
+      if (!acc[part.group]) {
+        acc[part.group] = [];
+      }
+      acc[part.group].push(part);
+      return acc;
+    }, {} as Record<PartGroup, typeof parts>);
+  }, [parts]);
 
   // 分组顺序
   const groupOrder: PartGroup[] = ['upper', 'midsole', 'outsole', 'tongue', 'lace', 'heel', 'swoosh', 'lining', 'other'];
@@ -58,12 +61,7 @@ export const PartListPanel: React.FC = () => {
                       <div className="part-item-info">
                         <span className="part-item-name">{part.name}</span>
                         <span className="part-item-material">
-                          {config.materialType === 'leather' && '皮革'}
-                          {config.materialType === 'mesh' && '网面'}
-                          {config.materialType === 'suede' && '麂皮'}
-                          {config.materialType === 'canvas' && '帆布'}
-                          {config.materialType === 'patent' && '光面'}
-                          {config.materialType === 'metallic' && '金属'}
+                          {MATERIAL_NAMES[config.materialType] ?? config.materialType}
                         </span>
                       </div>
 
@@ -108,171 +106,6 @@ export const PartListPanel: React.FC = () => {
           </div>
         )}
       </div>
-
-      <style>{`
-        .part-list-panel {
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .part-list-content {
-          flex: 1;
-          overflow-y: auto;
-          padding: var(--sf-space-2);
-        }
-
-        .part-group {
-          margin-bottom: var(--sf-space-4);
-        }
-
-        .part-group-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: var(--sf-space-2) var(--sf-space-3);
-          margin-bottom: var(--sf-space-1);
-        }
-
-        .part-group-title {
-          font-size: var(--sf-text-xs);
-          font-weight: var(--sf-font-semibold);
-          color: var(--sf-text-tertiary);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .part-group-count {
-          font-size: var(--sf-text-xs);
-          color: var(--sf-text-tertiary);
-          background-color: var(--sf-bg-tertiary);
-          padding: 0 var(--sf-space-2);
-          border-radius: var(--sf-radius-full);
-          min-width: 20px;
-          text-align: center;
-        }
-
-        .part-group-items {
-          display: flex;
-          flex-direction: column;
-          gap: var(--sf-space-1);
-        }
-
-        .part-item {
-          display: flex;
-          align-items: center;
-          gap: var(--sf-space-3);
-          padding: var(--sf-space-3);
-          border-radius: var(--sf-radius-md);
-          cursor: pointer;
-          transition: all var(--sf-duration-fast) var(--sf-easing-default);
-          border: 1px solid transparent;
-        }
-
-        .part-item:hover {
-          background-color: var(--sf-bg-secondary);
-        }
-
-        .part-item.selected {
-          background-color: var(--sf-bg-dark);
-          color: var(--sf-text-inverse);
-          border-color: var(--sf-bg-dark);
-        }
-
-        .part-item-color {
-          width: 32px;
-          height: 32px;
-          border-radius: var(--sf-radius-sm);
-          border: 1px solid var(--sf-border-primary);
-          flex-shrink: 0;
-        }
-
-        .part-item.selected .part-item-color {
-          border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        .part-item-info {
-          flex: 1;
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-
-        .part-item-name {
-          font-size: var(--sf-text-sm);
-          font-weight: var(--sf-font-medium);
-          color: var(--sf-text-primary);
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .part-item.selected .part-item-name {
-          color: var(--sf-text-inverse);
-        }
-
-        .part-item-material {
-          font-size: var(--sf-text-xs);
-          color: var(--sf-text-secondary);
-        }
-
-        .part-item.selected .part-item-material {
-          color: rgba(255, 255, 255, 0.7);
-        }
-
-        .part-item-visibility {
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: none;
-          background: none;
-          border-radius: var(--sf-radius-sm);
-          cursor: pointer;
-          color: var(--sf-text-secondary);
-          transition: all var(--sf-duration-fast) var(--sf-easing-default);
-          flex-shrink: 0;
-        }
-
-        .part-item-visibility:hover {
-          background-color: var(--sf-bg-tertiary);
-          color: var(--sf-text-primary);
-        }
-
-        .part-item-visibility.hidden {
-          opacity: 0.5;
-        }
-
-        .part-item.selected .part-item-visibility {
-          color: rgba(255, 255, 255, 0.7);
-        }
-
-        .part-item.selected .part-item-visibility:hover {
-          background-color: rgba(255, 255, 255, 0.1);
-          color: var(--sf-text-inverse);
-        }
-
-        .part-list-empty {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: var(--sf-space-8);
-          color: var(--sf-text-tertiary);
-          text-align: center;
-        }
-
-        .part-list-empty svg {
-          margin-bottom: var(--sf-space-4);
-          opacity: 0.5;
-        }
-
-        .part-list-empty p {
-          font-size: var(--sf-text-sm);
-        }
-      `}</style>
     </div>
   );
 };

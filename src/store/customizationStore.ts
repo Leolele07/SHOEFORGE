@@ -154,20 +154,22 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
   },
 
   resetPart: (partId) => {
-    const { partConfigs, parts } = get();
+    const { partConfigs, parts, originalPartConfigs } = get();
     const { pushState } = useHistoryStore.getState();
-    
+
     // 保存当前状态到历史
     pushState(new Map(partConfigs));
-    
+
     const part = parts.find((p) => p.id === partId);
-    
+
     if (part) {
+      // 从原始配置恢复材质类型，而非硬编码
+      const originalConfig = originalPartConfigs?.get(partId);
       const newConfigs = new Map(partConfigs);
       newConfigs.set(partId, {
         partId,
-        color: part.defaultColor,
-        materialType: 'mesh', // 默认材质类型
+        color: originalConfig?.originalColor ?? part.defaultColor,
+        materialType: originalConfig?.originalMaterialType ?? 'mesh',
         visible: true,
       });
       set({ partConfigs: newConfigs });
@@ -321,10 +323,10 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
 
   deleteDesign: (name) => {
     const { savedDesigns } = get();
-    
+
     const newSavedDesigns = new Map(savedDesigns);
     newSavedDesigns.delete(name);
-    
+
     // 更新localStorage
     const designsToSave: Record<string, any> = {};
     newSavedDesigns.forEach((value, key) => {
@@ -333,9 +335,14 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
         configs: Array.from(value.configs.entries()),
       };
     });
-    localStorage.setItem('shoeForge_savedDesigns', JSON.stringify(designsToSave));
-    
-    set({ savedDesigns: newSavedDesigns });
+
+    try {
+      localStorage.setItem('shoeForge_savedDesigns', JSON.stringify(designsToSave));
+      set({ savedDesigns: newSavedDesigns });
+    } catch (error) {
+      console.error('删除设计失败:', error);
+      showToast('删除设计失败，请重试', 'error');
+    }
   },
 
   getSavedDesigns: () => {
@@ -358,23 +365,39 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
   importPreset: (preset) => {
     const { partConfigs } = get();
     const { pushState } = useHistoryStore.getState();
-    
+
+    // 校验 preset 结构
+    if (!preset || !Array.isArray(preset.parts) || preset.parts.length === 0) {
+      showToast('方案格式无效：缺少部件数据', 'error');
+      return;
+    }
+
+    // 校验每个部件的基本结构
+    const isValid = preset.parts.every(
+      (part) => part && typeof part.partId === 'string' && typeof part.color === 'string'
+    );
+    if (!isValid) {
+      showToast('方案格式无效：部件数据损坏', 'error');
+      return;
+    }
+
     // 保存当前状态到历史
     pushState(new Map(partConfigs));
-    
+
     const newConfigs = new Map<PartId, PartConfig>();
-    
+
     preset.parts.forEach((part) => {
       newConfigs.set(part.partId, part);
     });
-    
+
     set({ partConfigs: newConfigs });
   },
 
   undo: () => {
     const { undo } = useHistoryStore.getState();
-    const previousState = undo();
-    
+    const currentState = get().partConfigs;
+    const previousState = undo(currentState);
+
     if (previousState) {
       set({ partConfigs: previousState });
     }
@@ -382,8 +405,9 @@ export const useCustomizationStore = create<CustomizationState>((set, get) => ({
 
   redo: () => {
     const { redo } = useHistoryStore.getState();
-    const nextState = redo();
-    
+    const currentState = get().partConfigs;
+    const nextState = redo(currentState);
+
     if (nextState) {
       set({ partConfigs: nextState });
     }
