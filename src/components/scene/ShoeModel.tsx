@@ -53,9 +53,6 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
     const scale = 2 / maxDim;
     groupRef.current.scale.setScalar(scale);
 
-    // 缩放后的尺寸
-    const scaledMinY = box.min.y * scale;
-
     // ── 自动检测鞋子朝向 ──
     // 策略：在XZ平面中，鞋子长轴是前后方向，短轴是左右方向
     // 找出长轴，然后判断哪端是鞋头（通常更低/更窄）
@@ -129,15 +126,19 @@ export const ShoeModel: React.FC<ShoeModelProps> = ({
       groupRef.current.rotation.y = yRotation;
     }
 
-    // 重新计算旋转后的包围盒（用于父组件相机定位）
-    const rotatedBox = new THREE.Box3().setFromObject(groupRef.current);
-    const rotatedSize = rotatedBox.getSize(new THREE.Vector3());
-    const rotatedCenter = rotatedBox.getCenter(new THREE.Vector3());
+    // 重新计算旋转后的世界包围盒（用于父组件相机定位）。
+    // 注意：不能直接复用缩放前的 box —— 它包含外层包裹组（自由/底部视角抬高 0.5）
+    // 的偏移，且未计入网格自带的旋转，会导致切换视角后鞋子沉入地面/水平偏移。
+    groupRef.current.updateWorldMatrix(true, true);
+    const worldBox = new THREE.Box3().setFromObject(groupRef.current);
+    const wrapperOffsetY = groupRef.current.parent ? groupRef.current.parent.position.y : 0;
+    const rotatedSize = worldBox.getSize(new THREE.Vector3());
+    const minY = worldBox.min.y - wrapperOffsetY;
 
-    // 水平居中，垂直方向让鞋底在y=0
-    groupRef.current.position.x = -rotatedCenter.x;
-    groupRef.current.position.y = -scaledMinY;
-    groupRef.current.position.z = -rotatedCenter.z;
+    // 水平居中，垂直方向让鞋底（最低点）落在 y=0（不含包裹组偏移）
+    groupRef.current.position.x = -(worldBox.min.x + worldBox.max.x) / 2;
+    groupRef.current.position.y = -minY;
+    groupRef.current.position.z = -(worldBox.min.z + worldBox.max.z) / 2;
 
     // 通知父组件：鞋子的中心点、实际尺寸和旋转角度
     if (onShoeBounds) {

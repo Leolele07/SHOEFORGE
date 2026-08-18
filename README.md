@@ -24,6 +24,7 @@
 - **多视角切换** - 7 种预设视角（正面/侧面左/侧面右/背面/顶部/底部/自由）
 - **一键白膜** - 清除所有材质，变为白色模型
 - **恢复原始** - 恢复到模型导入时的原始状态
+- **AI 设计助手** - 集成 Dify 智能问答，随时咨询鞋材、工艺与设计建议
 
 ### 辅助功能
 - **方案管理** - 保存/加载定制方案（JSON 格式）
@@ -38,11 +39,12 @@
 
 | 层级 | 技术 | 说明 |
 |------|------|------|
-| **3D 渲染** | Three.js + @react-three/fiber + @react-three/drei | 声明式 3D 场景 |
-| **前端框架** | React 18 + TypeScript 5 | 组件化架构 |
-| **构建工具** | Vite 6 | 秒级 HMR |
+| **3D 渲染** | Three.js 0.185 + @react-three/fiber 9 + @react-three/drei 10 | 声明式 3D 场景 |
+| **前端框架** | React 19 + TypeScript 6 | 组件化架构 |
+| **构建工具** | Vite 8 | 秒级 HMR |
 | **样式方案** | Tailwind CSS 4 + CSS 自定义属性 | 设计系统 |
-| **状态管理** | Zustand | 轻量级状态管理 |
+| **状态管理** | Zustand 5 | 轻量级状态管理 |
+| **AI 助手** | Dify 自托管（本地模型嵌入） | 鞋材/设计知识问答 |
 
 ---
 
@@ -88,7 +90,7 @@ npm run preview
 ```bash
 git clone https://github.com/Leolele07/SHOEFORGE.git
 cd SHOEFORGE
-git checkout v1.0.6
+git checkout v1.1.5
 ```
 
 **3. 安装依赖：**
@@ -167,20 +169,20 @@ http://localhost:5173/
 ## 项目结构
 
 ```
-shoe-forge/
 ├── public/
 │   ├── models/          # 3D 模型文件（支持Rhino导出的GLTF/GLB）
 │   └── textures/        # 材质贴图
 ├── src/
 │   ├── components/
 │   │   ├── layout/      # 布局组件（TopBar, MainLayout, Sidebar）
-│   │   ├── scene/       # 3D 场景组件（ShoeScene, ShoeModel）
+│   │   ├── scene/       # 3D 场景组件（ShoeScene, ShoeModel, CameraController）
 │   │   └── panel/       # 面板组件（ColorPicker, MaterialPicker）
 │   ├── store/           # Zustand 状态管理
 │   ├── hooks/           # 自定义 Hooks
 │   ├── lib/             # 工具函数（包含节点层次结构解析）
 │   ├── styles/          # 样式文件（tokens, components）
 │   └── types/           # TypeScript 类型定义
+├── index.html           # 入口页面（含 Dify AI 助手嵌入配置）
 ├── package.json
 ├── vite.config.ts
 └── tsconfig.json
@@ -216,6 +218,13 @@ shoe-forge/
 ---
 
 ## 版本历史
+
+### v1.1.5 (2026-08-18) - 视角修复、部件选择优化与 AI 设计助手
+- **修复视角下沉**：重写模型居中逻辑，改为基于真实世界包围盒计算，修复转左/转右/顶部视角下鞋子沉入地面半个单位的问题
+- **修复部件点击视角跳变**：稳定相机中心引用，点击 3D 部件不再触发视角重置/跳动
+- **相机构图优化**：自由/底部视角下相机看向鞋子实际中心，各视角构图统一
+- **集成 Dify AI 设计助手**：页面左下角白色聊天气泡，可随时咨询鞋材、工艺与设计建议
+- **模型兼容性增强**：适配坐标原点不在鞋底的模型（如 NIKE_SPORTS_SHOE_BLACK.glb）
 
 ### v1.1.4 (2026-08-04) - 犀牛图层分组与交互优化
 - **犀牛图层分组**：重写模型遍历逻辑，以犀牛图层（命名GROUP）为单位组织部件，部件列表从76个独立mesh合并为15个图层部件

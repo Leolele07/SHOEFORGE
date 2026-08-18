@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef, useState } from 'react';
+import React, { useEffect, useCallback, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -21,6 +21,13 @@ const SceneContent: React.FC = () => {
 
   const showGround = !['free', 'bottom'].includes(presetCamera);
   const shoeOffsetY = ['free', 'bottom'].includes(presetCamera) ? 0.5 : 0;
+
+  // 相机看向鞋子实际中心（自由/底部视角下鞋子被包裹组抬高 0.5）。
+  // 用 useMemo 保持引用稳定，避免无关重渲染（如点击部件）触发相机重置。
+  const cameraCenter = useMemo<[number, number, number]>(
+    () => [shoeCenter[0], shoeCenter[1] + shoeOffsetY, shoeCenter[2]],
+    [shoeCenter, shoeOffsetY]
+  );
 
   const handleShoeBounds = useCallback((bounds: { center: THREE.Vector3; size: THREE.Vector3; frontDir: THREE.Vector3 }) => {
     const newCenter: [number, number, number] = [bounds.center.x, bounds.center.y, bounds.center.z];
@@ -83,7 +90,11 @@ const SceneContent: React.FC = () => {
         maxDistance={cameraDistance * 3}
       />
 
-      <CameraController controlsRef={controlsRef} shoeCenter={shoeCenter} cameraDistance={cameraDistance} />
+      <CameraController
+        controlsRef={controlsRef}
+        shoeCenter={cameraCenter}
+        cameraDistance={cameraDistance}
+      />
 
       <group position={[0, shoeOffsetY, 0]}>
         <ShoeModelWrapper onShoeBounds={handleShoeBounds} />

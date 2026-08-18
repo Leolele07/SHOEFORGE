@@ -9,5 +9,55 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      window.difyChatbotConfig = {
+        token: 'N8Cbu7ow4L9kQXVr',
+        baseUrl: 'http://localhost',
+        inputs: {
+          // You can define the inputs from the Start node here
+          // key is the variable name
+          // e.g.
+          // name: "NAME"
+        },
+        systemVariables: {
+          // user_id: 'YOU CAN DEFINE USER ID HERE',
+          // conversation_id: 'YOU CAN DEFINE CONVERSATION ID HERE, IT MUST BE A VALID UUID',
+        },
+        userVariables: {
+          // avatar_url: 'YOU CAN DEFINE USER AVATAR URL HERE',
+          // name: 'YOU CAN DEFINE USER NAME HERE',
+        },
+      }
+    </script>
+    <script
+      src="http://localhost/embed.min.js"
+      id="N8Cbu7ow4L9kQXVr"
+      defer>
+    </script>
+    <style>
+      /* 基础样式（来自 Dify 嵌入代码） */
+      #dify-chatbot-bubble-button {
+        background-color: #1C64F2 !important;
+      }
+      #dify-chatbot-bubble-window {
+        width: 24rem !important;
+        height: 40rem !important;
+      }
+      /* 之前要求的自定义：白色按钮 + 蓝色图标 + 左下角 + 白色聊天窗口 */
+      #dify-chatbot-bubble-button {
+        --dify-chatbot-bubble-button-left: 1rem;
+        background-color: #FFFFFF !important;
+      }
+      #dify-chatbot-bubble-button #openIcon path,
+      #dify-chatbot-bubble-button #closeIcon path {
+        fill: #1C64F2 !important;
+        stroke: #1C64F2 !important;
+      }
+      #dify-chatbot-bubble-window {
+        background-color: #FFFFFF !important;
+        left: 1rem !important;
+        right: unset !important;
+      }
+    </style>
   </body>
 </html>
